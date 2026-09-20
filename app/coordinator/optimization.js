@@ -80,21 +80,20 @@ export default function OptimizationScreen() {
                 cy="90"
                 r="72"
                 stroke={Colors.surfaceContainerHigh}
-                strokeWidth="10"
-                fill="transparent"
+                strokeWidth={10}
+                fill="none"
               />
               <Circle
                 cx="90"
                 cy="90"
                 r="72"
                 stroke={Colors.secondary}
-                strokeWidth="10"
+                strokeWidth={10}
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 72}`}
-                strokeDashoffset={`${2 * Math.PI * 72 * (1 - progress / 100)}`}
-                fill="transparent"
-                origin="90, 90"
-                rotation="-90"
+                strokeDasharray={452.39}
+                strokeDashoffset={452.39 * (1 - progress / 100)}
+                fill="none"
+                transform="rotate(-90 90 90)"
               />
             </Svg>
 

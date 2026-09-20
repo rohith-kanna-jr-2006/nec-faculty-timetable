@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "NEC Faculty Timetable",
+    "slug": "nec-faculty-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "necfaculty",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f2942"
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

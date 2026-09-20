@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Native build artifacts
+android/
+ios/
+
+# Environment and logs
+*.log
+.env*
+.DS_Store
+Thumbs.db

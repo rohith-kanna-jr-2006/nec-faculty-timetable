@@ -128,8 +128,75 @@ export let COURSE_ALLOCATION_CONFIG = {};
 export let INITIAL_FACULTY_ALLOCATIONS = {};
 export let INITIAL_FACULTY_ASSIGNMENTS = [];
 export let FACULTY_ELIGIBILITY = {};
-export let FACULTY_PROFILE = null;
-export let AC_PROFILE = null;
+export const DEFAULT_FACULTY_PROFILE = {
+  id: 'CSE-FAC-042',
+  name: 'Ms. C. Navamani',
+  initials: 'CN',
+  designation: 'Assistant Professor',
+  department: 'Dept. of Computer Science & Engg.',
+  shortDept: 'CSE',
+  email: 'c.navamani@nandhaengg.org',
+  academicYear: 'AY 2024-25 Odd',
+  semester: 'Semester V',
+  regulation: 'Autonomous Regulation R2022',
+  status: 'Active',
+  role: 'Faculty Viewer (AC Controlled)',
+  academicCoordinator: 'Mr. R. Manikandan',
+  maxWorkloadThreshold: 16,
+  phone: '+91 98765 43210',
+  cabin: 'CSE Block 2nd Floor, Room 204',
+  experience: '8 Years Teaching',
+  specialization: 'Compiler Design & Distributed Systems',
+};
+
+export const DEFAULT_AC_PROFILE = {
+  id: 'CSE-FAC-001',
+  name: 'Mr. R. Manikandan',
+  initials: 'RM',
+  designation: 'Assistant Professor (Sl.Gr.) & Academic Coordinator',
+  department: 'Dept. of Computer Science & Engg.',
+  shortDept: 'CSE',
+  email: 'ac.cse@nandhaengg.org',
+  academicYear: 'AY 2024-25 Odd',
+  semester: 'Semester V (III Year CSE)',
+  regulation: 'Autonomous Regulation R2022',
+  status: 'Live Coordinator Console',
+  role: 'Academic Coordinator & Timetable Chair',
+  cabin: 'CSE Block 1st Floor, AC Desk #102',
+  phone: 'ext 241 / +91 98421 00241',
+  assignedSections: ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'],
+};
+
+export const DEFAULT_HOD_PROFILE = {
+  id: 'CSE-HOD-001',
+  name: 'Dr. S. Karthik, M.E., Ph.D.',
+  initials: 'SK',
+  designation: 'Professor & Head of Department',
+  department: 'Dept. of Computer Science & Engg.',
+  shortDept: 'CSE',
+  email: 'hod.cse@nandhaengg.org',
+  academicYear: 'AY 2024-25 Odd',
+  semester: 'All Semesters (I - VIII)',
+  regulation: 'Autonomous Regulation R2022',
+  status: 'Executive Authority Active',
+  role: 'Head of Department (L1 Authority)',
+  cabin: 'HOD Secretariat, CSE Main Block, Ground Floor',
+  phone: '+91 98422 12345 / ext 201',
+  clearanceLevel: 'LEVEL 01 • STATUTORY EXECUTIVE',
+};
+
+export const AVAILABLE_FACULTY_CANDIDATES = [
+  { id: 'CSE-FAC-014', name: 'Dr. K. Senthil Kumar', designation: 'Associate Professor', experience: '14 Yrs', maxLoad: 16, currentLoad: 12 },
+  { id: 'CSE-FAC-021', name: 'Dr. M. Kavitha', designation: 'Associate Professor', experience: '12 Yrs', maxLoad: 16, currentLoad: 10 },
+  { id: 'CSE-FAC-042', name: 'Ms. C. Navamani', designation: 'Assistant Professor', experience: '8 Yrs', maxLoad: 16, currentLoad: 14 },
+  { id: 'CSE-FAC-038', name: 'Mr. P. Vignesh', designation: 'Assistant Professor', experience: '6 Yrs', maxLoad: 16, currentLoad: 8 },
+  { id: 'CSE-FAC-009', name: 'Dr. T. Rajesh', designation: 'Professor', experience: '18 Yrs', maxLoad: 14, currentLoad: 6 },
+  { id: 'CSE-FAC-055', name: 'Mrs. S. Deepa', designation: 'Assistant Professor', experience: '5 Yrs', maxLoad: 16, currentLoad: 11 },
+];
+
+export let FACULTY_PROFILE = DEFAULT_FACULTY_PROFILE;
+export let AC_PROFILE = DEFAULT_AC_PROFILE;
+export let HOD_PROFILE = DEFAULT_HOD_PROFILE;
 export let AC_FACULTY_LIST = [];
 export let ASSIGNED_COURSES = [];
 export let NOTIFICATIONS_DATA = [];
@@ -230,26 +297,127 @@ export function clearMasterTimetableSessions() {
 
 // Faculty Profile
 export function getFacultyProfile() {
-  return currentFacultyProfile ? { ...currentFacultyProfile } : null;
+  return currentFacultyProfile ? { ...currentFacultyProfile } : { ...DEFAULT_FACULTY_PROFILE };
 }
 
 export function setFacultyProfile(profile) {
   currentFacultyProfile = profile ? { ...profile } : null;
-  FACULTY_PROFILE = currentFacultyProfile;
+  FACULTY_PROFILE = currentFacultyProfile || DEFAULT_FACULTY_PROFILE;
   notifyStateSubscribers();
   return currentFacultyProfile;
 }
 
 // Coordinator Profile
 export function getCoordinatorProfile() {
-  return currentCoordinatorProfile ? { ...currentCoordinatorProfile } : null;
+  return currentCoordinatorProfile ? { ...currentCoordinatorProfile } : { ...DEFAULT_AC_PROFILE };
 }
 
 export function setCoordinatorProfile(profile) {
   currentCoordinatorProfile = profile ? { ...profile } : null;
-  AC_PROFILE = currentCoordinatorProfile;
+  AC_PROFILE = currentCoordinatorProfile || DEFAULT_AC_PROFILE;
   notifyStateSubscribers();
   return currentCoordinatorProfile;
+}
+
+// HOD Profile Services
+let currentHODProfile = null;
+export function getHODProfile() {
+  return currentHODProfile ? { ...currentHODProfile } : { ...DEFAULT_HOD_PROFILE };
+}
+
+export function setHODProfile(profile) {
+  currentHODProfile = profile ? { ...profile } : null;
+  HOD_PROFILE = currentHODProfile || DEFAULT_HOD_PROFILE;
+  notifyStateSubscribers();
+  return currentHODProfile;
+}
+
+// Class Advisor Assignment State (HOD Sole Authority)
+let currentClassAdvisors = {
+  'CSE-A': { facultyId: 'CSE-FAC-014', facultyName: 'Dr. K. Senthil Kumar', designation: 'Associate Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
+  'CSE-B': { facultyId: 'CSE-FAC-021', facultyName: 'Dr. M. Kavitha', designation: 'Associate Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
+  'CSE-C': { facultyId: 'CSE-FAC-042', facultyName: 'Ms. C. Navamani', designation: 'Assistant Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
+  'CSE-D': { facultyId: 'CSE-FAC-038', facultyName: 'Mr. P. Vignesh', designation: 'Assistant Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
+};
+
+export function getClassAdvisors() {
+  return { ...currentClassAdvisors };
+}
+
+export function setClassAdvisor(section, advisorData) {
+  currentClassAdvisors = {
+    ...currentClassAdvisors,
+    [section]: {
+      ...advisorData,
+      appointedAt: new Date().toISOString().split('T')[0],
+      status: 'CONFIRMED',
+    },
+  };
+  notifyStateSubscribers();
+  return currentClassAdvisors;
+}
+
+// HOD Faculty Allocations (Binding L1 Decision)
+let currentHODFacultyAllocations = {};
+
+export function getHODFacultyAllocations() {
+  return { ...currentHODFacultyAllocations };
+}
+
+export function setHODFacultyAllocation(courseCode, allocation) {
+  currentHODFacultyAllocations = {
+    ...currentHODFacultyAllocations,
+    [courseCode]: allocation,
+  };
+  notifyStateSubscribers();
+  return currentHODFacultyAllocations;
+}
+
+// HOD Notifications
+let currentHODNotifications = [
+  {
+    id: 'HOD-NOTIF-001',
+    type: 'TIMETABLE_REVIEW',
+    priority: 'HIGH',
+    title: 'Timetable Ready for Statutory Ratification',
+    message: 'Academic Coordinator submitted CSE-C (Sem V) timetable draft. 35/35 periods scheduled with 0 hard conflicts.',
+    timestamp: '10 mins ago',
+    read: false,
+    route: '/hod/timetable-review',
+    badge: 'Ratification Required',
+  },
+  {
+    id: 'HOD-NOTIF-002',
+    type: 'CLASS_ADVISOR',
+    priority: 'MEDIUM',
+    title: 'Class Advisor Confirmation Confirmed',
+    message: 'Ms. C. Navamani designated as Class Advisor for III Year CSE-C under Autonomous R2022 regulation.',
+    timestamp: '2 hours ago',
+    read: true,
+    route: '/hod/class-advisor',
+    badge: 'Advisor Appointed',
+  },
+  {
+    id: 'HOD-NOTIF-003',
+    type: 'FACULTY_ALLOCATION',
+    priority: 'HIGH',
+    title: 'Pending Faculty Allocation Decision',
+    message: 'Course 22CSC14 (Compiler Design) has 2 eligible subject handlers submitted by AC. Executive allocation pending.',
+    timestamp: '5 hours ago',
+    read: false,
+    route: '/hod/faculty-allocation',
+    badge: 'Allocation Pending',
+  },
+];
+
+export function getHODNotifications() {
+  return [...currentHODNotifications];
+}
+
+export function markHODNotificationRead(id) {
+  currentHODNotifications = currentHODNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+  notifyStateSubscribers();
+  return currentHODNotifications;
 }
 
 // Notifications

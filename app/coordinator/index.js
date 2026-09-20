@@ -41,7 +41,7 @@ export default function ACDashboardScreen() {
 
           <View style={styles.deskMainRow}>
             <View style={styles.deskInfoCol}>
-              <Text style={styles.coordinatorName}>{AC_PROFILE.name}</Text>
+              <Text style={styles.coordinatorName}>{AC_PROFILE?.name || 'Academic Coordinator'}</Text>
               <View style={styles.cohortSubRow}>
                 <MaterialIcons name="school" size={15} color={Colors.secondary} />
                 <Text style={styles.cohortSubText}>

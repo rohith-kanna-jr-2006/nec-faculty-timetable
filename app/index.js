@@ -66,6 +66,14 @@ export default function AppEntry() {
             onPress={() => router.replace('/coordinator')}
             style={styles.acBtn}
           />
+          <PrimaryButton
+            title="Head of Department (HOD) Portal"
+            variant="subtle"
+            icon="security"
+            iconRight="arrow-forward"
+            onPress={() => router.replace('/hod/login')}
+            style={styles.hodBtn}
+          />
         </View>
       </View>
 
@@ -211,6 +219,12 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderColor: Colors.surfaceContainerHigh,
+  },
+  hodBtn: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#0F2942',
+    backgroundColor: '#F8FAFC',
   },
   footer: {
     alignItems: 'center',

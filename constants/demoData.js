@@ -39,7 +39,7 @@ export const PERIOD_TIMINGS = [
  * Unified Timetable Session Model
  * Every session in the system is an instance of TimetableSession.
  */
-export const MASTER_TIMETABLE_SESSIONS = [
+const RAW_MASTER_TIMETABLE_SESSIONS = [
   // ---------------- MONDAY ----------------
   {
     id: 'MON-P1',
@@ -637,6 +637,24 @@ export const MASTER_TIMETABLE_SESSIONS = [
   },
 ];
 
+/**
+ * Authoritative Master Timetable Dataset (Single Source of Truth)
+ * Conforms to the standard TimetableSession model.
+ */
+export const MASTER_TIMETABLE_SESSIONS = RAW_MASTER_TIMETABLE_SESSIONS.map((s) => ({
+  academicYear: '2024-25',
+  department: 'CSE',
+  year: 'III Year',
+  semester: 'Semester V',
+  spanCount: s.spanCount || (s.isSpan ? 4 : 1),
+  isSpan: !!s.isSpan,
+  ...s,
+  section: s.section || s.classSection || 'CSE-C',
+  classSection: s.classSection || s.section || 'CSE-C',
+  faculty: s.faculty || s.facultyName,
+  facultyName: s.facultyName || s.faculty,
+}));
+
 export const ASSIGNED_COURSES = [
   {
     code: '22CSX42',
@@ -756,19 +774,200 @@ export const VALIDATION_CHECKS = [
 ];
 
 /**
- * Deterministic helper functions to derive faculty-specific datasets
+ * ============================================================
+ * TIMETABLE VERSION & HOD APPROVAL STATE MODEL
+ * ============================================================
+ * The Class Timetable is subject to institutional approval by HOD.
+ * Workflow: DRAFT -> GENERATED -> PENDING_HOD_APPROVAL -> APPROVED -> PUBLISHED
+ */
+export const TIMETABLE_STATUSES = {
+  DRAFT: 'DRAFT',
+  GENERATED: 'GENERATED',
+  PENDING_HOD_APPROVAL: 'PENDING_HOD_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  PUBLISHED: 'PUBLISHED',
+};
+
+export const INITIAL_TIMETABLE_VERSION = {
+  id: 'VER-2024-25-ODD-CSEC-v4.2',
+  academicYear: '2024-25',
+  department: 'CSE',
+  year: 'III Year',
+  semester: 'Semester V',
+  section: 'CSE-C',
+  status: 'PENDING_HOD_APPROVAL',
+  versionLabel: 'v4.2',
+  generatedAt: '2024-10-20T09:30:00Z',
+  approvedAt: null,
+  approvedBy: null,
+  hodReviewer: 'Dr. S. K. Nandha (HOD / CSE)',
+  rejectionReason: null,
+  totalRequiredPeriods: 35,
+  totalScheduledPeriods: 35,
+  freePeriods: 0,
+  hardConflicts: 0,
+};
+
+let activeTimetableVersion = { ...INITIAL_TIMETABLE_VERSION };
+const versionSubscribers = new Set();
+
+export function getTimetableVersion(context = {}) {
+  return activeTimetableVersion;
+}
+
+export function updateTimetableVersionStatus(newStatus, metadata = {}) {
+  const timestamp = new Date().toISOString();
+  activeTimetableVersion = {
+    ...activeTimetableVersion,
+    status: newStatus,
+    ...(newStatus === 'APPROVED' || newStatus === 'PUBLISHED'
+      ? {
+          approvedBy: metadata.approvedBy || 'Dr. S. K. Nandha (HOD / CSE)',
+          approvedAt: activeTimetableVersion.approvedAt || timestamp,
+        }
+      : {}),
+    ...(metadata.rejectionReason ? { rejectionReason: metadata.rejectionReason } : {}),
+    ...(newStatus === 'PENDING_HOD_APPROVAL' ? { rejectionReason: null } : {}),
+    ...(newStatus === 'REJECTED' ? { approvedAt: null, approvedBy: null } : {}),
+  };
+
+  versionSubscribers.forEach((cb) => {
+    try {
+      cb(activeTimetableVersion);
+    } catch (err) {
+      console.error('Error in timetable version subscriber:', err);
+    }
+  });
+
+  return activeTimetableVersion;
+}
+
+export function subscribeTimetableVersion(callback) {
+  versionSubscribers.add(callback);
+  return () => versionSubscribers.delete(callback);
+}
+
+/**
+ * ============================================================
+ * UNIFIED SELECTORS OVER MASTER_TIMETABLE_SESSIONS
+ * ============================================================
+ * Single Source of Truth: MASTER_TIMETABLE_SESSIONS
+ * Do NOT maintain separate datasets for Faculty vs Class.
  */
 
+/**
+ * Filter Master Timetable by Faculty perspective
+ */
+export function getFacultyTimetable(facultyId = 'CSE-FAC-042', options = {}) {
+  const { day, academicYear, semester } = options;
+  return MASTER_TIMETABLE_SESSIONS.filter((session) => {
+    const matchesFaculty =
+      session.facultyId === facultyId ||
+      session.faculty?.includes(facultyId) ||
+      session.facultyName?.includes(facultyId);
+    if (!matchesFaculty) return false;
+    if (day && day !== 'all' && session.day !== day) return false;
+    if (academicYear && session.academicYear !== academicYear) return false;
+    if (semester && session.semester !== semester) return false;
+    return true;
+  });
+}
+
+/**
+ * Filter Master Timetable by Class/Section perspective
+ */
+export function getClassTimetable(context = {}, options = {}) {
+  const department = context.department || 'CSE';
+  const section = context.section || context.classSection || 'CSE-C';
+  const { day } = options;
+
+  return MASTER_TIMETABLE_SESSIONS.filter((session) => {
+    const matchesSection =
+      session.section === section || session.classSection === section;
+    const matchesDept = !session.department || session.department === department;
+    if (!matchesSection || !matchesDept) return false;
+    if (day && day !== 'all' && session.day !== day) return false;
+    return true;
+  });
+}
+
+/**
+ * Published Class Timetable Selector (Governance Rule)
+ * Only exposes timetable sessions if version is APPROVED or PUBLISHED.
+ */
+export function getPublishedClassTimetable(context = {}, options = {}) {
+  const version = getTimetableVersion(context);
+  const isApprovedOrPublished =
+    version.status === 'APPROVED' || version.status === 'PUBLISHED';
+  return {
+    isApproved: isApprovedOrPublished,
+    status: version.status,
+    version,
+    sessions: isApprovedOrPublished ? getClassTimetable(context, options) : [],
+  };
+}
+
+/**
+ * Backward compatibility helpers delegating directly to unified selectors
+ */
 export function getFacultySessions(facultyId = 'CSE-FAC-042') {
-  return MASTER_TIMETABLE_SESSIONS.filter((s) => s.facultyId === facultyId);
+  return getFacultyTimetable(facultyId);
 }
 
 export function getFacultySessionsByDay(day = 'WED', facultyId = 'CSE-FAC-042') {
-  return MASTER_TIMETABLE_SESSIONS.filter((s) => s.facultyId === facultyId && s.day === day);
+  return getFacultyTimetable(facultyId, { day });
 }
 
 export function getClassSessionsByDay(day = 'WED', classSection = 'CSE-C') {
-  return MASTER_TIMETABLE_SESSIONS.filter((s) => s.classSection === classSection && s.day === day);
+  return getClassTimetable({ section: classSection }, { day });
+}
+
+/**
+ * Validates faculty allocations prior to generating the timetable.
+ * Returns diagnostic issues if invalid, or calculated metrics if valid.
+ */
+export function validateFacultyAllocations(allocations = INITIAL_FACULTY_ALLOCATIONS) {
+  const errors = [];
+  CURRICULUM_COURSES.forEach((course) => {
+    const alloc = allocations[course.code];
+    const config = COURSE_ALLOCATION_CONFIG[course.code];
+    if (!alloc) {
+      errors.push(`Missing faculty allocation for ${course.code} (${course.name})`);
+      return;
+    }
+    if (config?.courseType === 'THEORY') {
+      if (!alloc.faculty) {
+        errors.push(`Theory course ${course.code} must have exactly one faculty assigned.`);
+      }
+    } else if (config?.courseType === 'LAB') {
+      if (!alloc.primaryFaculty) {
+        errors.push(`Laboratory course ${course.code} missing primary theory-linked faculty.`);
+      }
+      if (!alloc.additionalFaculty || alloc.additionalFaculty.length === 0) {
+        errors.push(`Laboratory course ${course.code} requires at least one additional staff member.`);
+      }
+    } else if (config?.courseType === 'SAS') {
+      if (!alloc.faculty || alloc.faculty.length < 2) {
+        errors.push(`Soft/Analytical Skills course ${course.code} requires a minimum of two faculty handlers.`);
+      }
+    } else if (config?.courseType === 'OTHER') {
+      const required = alloc.staffCount || 1;
+      const count = (alloc.faculty || []).filter(Boolean).length;
+      if (count < required) {
+        errors.push(`Course ${course.code} requires ${required} staff member(s) in Staff's Handled mode.`);
+      }
+    }
+  });
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    totalRequiredPeriods: 35,
+    scheduledPeriods: errors.length === 0 ? 35 : 0,
+    freePeriods: 0,
+    hardConflicts: 0,
+  };
 }
 
 export function getFacultyWorkload(facultyId = 'CSE-FAC-042') {

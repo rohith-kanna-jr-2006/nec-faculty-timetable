@@ -259,10 +259,52 @@ export default function OptimizationScreen() {
           </View>
         </View>
 
+        {/* Generation Result Summary Card */}
+        {solverFinished && (
+          <View style={styles.generationResultCard}>
+            <View style={styles.generationResultHeader}>
+              <View style={styles.generationResultLeft}>
+                <MaterialIcons name="fact-check" size={18} color={Colors.primary} />
+                <Text style={styles.generationResultTitle}>TIMETABLE GENERATION OUTPUT</Text>
+              </View>
+              <View style={styles.generationStatusBadge}>
+                <Text style={styles.generationStatusText}>100% FEASIBLE</Text>
+              </View>
+            </View>
+
+            <View style={styles.genMetricsRow}>
+              <View style={styles.genMetricCol}>
+                <Text style={styles.genMetricVal}>35</Text>
+                <Text style={styles.genMetricLabel}>Required</Text>
+              </View>
+              <View style={styles.genMetricCol}>
+                <Text style={[styles.genMetricVal, { color: Colors.secondary }]}>35</Text>
+                <Text style={styles.genMetricLabel}>Scheduled</Text>
+              </View>
+              <View style={styles.genMetricCol}>
+                <Text style={styles.genMetricVal}>0</Text>
+                <Text style={styles.genMetricLabel}>Free</Text>
+              </View>
+              <View style={styles.genMetricCol}>
+                <Text style={[styles.genMetricVal, { color: Colors.onTertiaryContainer }]}>0</Text>
+                <Text style={styles.genMetricLabel}>Conflicts</Text>
+              </View>
+            </View>
+
+            <View style={styles.approvalStatusRow}>
+              <Text style={styles.approvalStatusLabel}>TARGET STAGE:</Text>
+              <View style={styles.pendingBadge}>
+                <MaterialIcons name="hourglass-top" size={12} color="#c2410c" />
+                <Text style={styles.pendingBadgeText}>PENDING HOD APPROVAL</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Action Controls */}
         <View style={styles.actionsCard}>
           <PrimaryButton
-            title="Proceed to Timetable Validation"
+            title="Proceed to Validation & Approval"
             icon="verified"
             iconRight="arrow-forward"
             onPress={() => router.push('/coordinator/validation')}
@@ -532,6 +574,96 @@ const styles = StyleSheet.create({
     color: Colors.onSurfaceVariant,
     marginTop: 2,
     lineHeight: 15,
+  },
+  generationResultCard: {
+    backgroundColor: Colors.surfaceContainerLowest,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: Colors.secondaryFixedDim,
+    gap: 10,
+    ...Shadows.md,
+  },
+  generationResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  generationResultLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  generationResultTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.primary,
+    fontFamily: Typography.labelMono.fontFamily,
+    letterSpacing: 0.5,
+  },
+  generationStatusBadge: {
+    backgroundColor: Colors.tertiaryFixed,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+  },
+  generationStatusText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: Colors.onTertiaryContainer,
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  genMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surfaceContainerLow,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  genMetricCol: {
+    alignItems: 'center',
+  },
+  genMetricVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.primary,
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  genMetricLabel: {
+    fontSize: 8,
+    fontWeight: '600',
+    color: Colors.onSurfaceVariant,
+    marginTop: 2,
+  },
+  approvalStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  approvalStatusLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.onSurfaceVariant,
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  pendingBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#c2410c',
+    fontFamily: Typography.labelMono.fontFamily,
   },
   actionsCard: {
     gap: 8,

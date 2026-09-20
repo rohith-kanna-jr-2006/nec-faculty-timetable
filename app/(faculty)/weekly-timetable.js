@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,24 @@ import Card from '../../components/Card';
 import TimetableCard from '../../components/TimetableCard';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import {
-  MASTER_TIMETABLE_SESSIONS,
-  getClassSessionsByDay,
+  getClassTimetable,
+  getTimetableVersion,
+  subscribeTimetableVersion,
+  TIMETABLE_STATUSES,
 } from '../../constants/demoData';
 
 export default function WeeklyTimetableScreen() {
   const [selectedDay, setSelectedDay] = useState('all'); // 'all' | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI'
+  const [activeDepartment, setActiveDepartment] = useState('CSE');
+  const [activeYear, setActiveYear] = useState('III Year');
+  const [activeSemester, setActiveSemester] = useState('Semester V');
+  const [activeSection, setActiveSection] = useState('CSE-C');
+  const [timetableVersion, setTimetableVersion] = useState(getTimetableVersion());
+
+  useEffect(() => {
+    const unsub = subscribeTimetableVersion((v) => setTimetableVersion({ ...v }));
+    return unsub;
+  }, []);
 
   const dayTabs = [
     { id: 'all', label: 'All Days', icon: 'view-week' },
@@ -31,9 +43,9 @@ export default function WeeklyTimetableScreen() {
 
   const daysList = [
     { id: 'MON', title: 'MONDAY', slotsText: '7 SLOTS ACTIVE', isLabDay: false },
-    { id: 'TUE', title: 'TUESDAY', slotsText: 'LAB DAY', isLabDay: true },
+    { id: 'TUE', title: 'TUESDAY', slotsText: 'LAB DAY (FSD LAB)', isLabDay: true },
     { id: 'WED', title: 'WEDNESDAY', slotsText: '7 SLOTS ACTIVE', isLabDay: false },
-    { id: 'THU', title: 'THURSDAY', slotsText: 'LAB DAY', isLabDay: true },
+    { id: 'THU', title: 'THURSDAY', slotsText: 'LAB DAY (OOSE LAB)', isLabDay: true },
     { id: 'FRI', title: 'FRIDAY', slotsText: '7 SLOTS ACTIVE', isLabDay: false },
   ];
 
@@ -45,50 +57,126 @@ export default function WeeklyTimetableScreen() {
   const handleExport = () => {
     Alert.alert(
       'Export Timetable Matrix',
-      'Exporting official weekly schedule grid for III Year CSE-C (Semester V, AY 2024-25).',
+      `Exporting official weekly schedule grid for ${activeYear} ${activeSection} (${activeSemester}, AY 2024-25).\nApproval Status: ${timetableVersion.status}`,
       [{ text: 'OK' }]
     );
   };
 
+  const getStatusBadge = () => {
+    switch (timetableVersion.status) {
+      case TIMETABLE_STATUSES.PENDING_HOD_APPROVAL:
+        return {
+          title: 'PENDING HOD APPROVAL',
+          sub: 'Draft candidate awaiting review by Dr. S. K. Nandha (HOD / CSE)',
+          bg: '#fff7ed',
+          border: '#fed7aa',
+          color: '#c2410c',
+          icon: 'hourglass-top',
+        };
+      case TIMETABLE_STATUSES.APPROVED:
+        return {
+          title: 'APPROVED BY HOD',
+          sub: `Officially approved by ${timetableVersion.approvedBy || 'Dr. S. K. Nandha (HOD / CSE)'} • Ready for semester rollout`,
+          bg: '#ecfdf5',
+          border: '#a7f3d0',
+          color: '#047857',
+          icon: 'verified',
+        };
+      case TIMETABLE_STATUSES.REJECTED:
+        return {
+          title: 'REVISION REQUESTED BY HOD',
+          sub: timetableVersion.rejectionReason || 'Under revision by Academic Coordinator',
+          bg: '#fef2f2',
+          border: '#fecaca',
+          color: '#b91c1c',
+          icon: 'error-outline',
+        };
+      case TIMETABLE_STATUSES.PUBLISHED:
+        return {
+          title: 'PUBLISHED & ACTIVE',
+          sub: 'Synchronized with Campus ERP, Student App & Digital Display Panels',
+          bg: '#eff6ff',
+          border: '#bfdbfe',
+          color: '#1d4ed8',
+          icon: 'check-circle',
+        };
+      default:
+        return {
+          title: 'DRAFT TIMETABLE',
+          sub: 'Generated candidate grid under academic coordinator review',
+          bg: Colors.surfaceContainer,
+          border: Colors.outlineVariant,
+          color: Colors.primary,
+          icon: 'pending',
+        };
+    }
+  };
+
+  const statusInfo = getStatusBadge();
+
   return (
     <View style={styles.screenContainer}>
       <AppHeader
-        title="Weekly Timetable"
-        subtitle="Department of CSE • Class CSE-C"
-        badgeText="III / V / CSE-C"
+        title="Class Timetable"
+        subtitle={`Department of ${activeDepartment} • Section ${activeSection}`}
+        badgeText={`${activeDepartment} • ${activeSection}`}
       />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner Card */}
-        <Card style={styles.overviewCard}>
-          <View style={styles.overviewHeader}>
-            <View style={styles.termInfo}>
-              <View style={styles.pulsePill}>
-                <View style={styles.blueDot} />
-                <Text style={styles.pulsePillText}>SEMESTER V • 2024-2025</Text>
-              </View>
-              <View style={styles.periodsPill}>
-                <Text style={styles.periodsPillText}>35 PERIODS / WK</Text>
-              </View>
+        {/* Governance & Approval State Card */}
+        <View style={[styles.governanceCard, { backgroundColor: statusInfo.bg, borderColor: statusInfo.border }]}>
+          <View style={styles.govTopRow}>
+            <View style={styles.govLeft}>
+              <MaterialIcons name={statusInfo.icon} size={18} color={statusInfo.color} />
+              <Text style={[styles.govTitle, { color: statusInfo.color }]}>
+                {statusInfo.title}
+              </Text>
             </View>
-
-            <View style={styles.exportBtnsRow}>
-              <Pressable
-                style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
-                onPress={handleExport}
-              >
-                <MaterialIcons name="picture-as-pdf" size={16} color={Colors.primary} />
-                <Text style={styles.exportBtnText}>PDF</Text>
-              </Pressable>
+            <View style={[styles.govPill, { backgroundColor: statusInfo.border }]}>
+              <Text style={[styles.govPillText, { color: statusInfo.color }]}>
+                {timetableVersion.versionLabel || 'v4.2'}
+              </Text>
             </View>
           </View>
+          <Text style={[styles.govSub, { color: statusInfo.color }]}>
+            {statusInfo.sub}
+          </Text>
+        </View>
 
-          <View style={styles.classTitleRow}>
-            <Text style={styles.classHeading}>Class Schedule CSE-C</Text>
-            <MaterialIcons name="verified" size={18} color={Colors.secondary} />
+        {/* Academic Context Selector Card */}
+        <Card style={styles.contextCard}>
+          <View style={styles.contextHeader}>
+            <Text style={styles.contextSectionLabel}>ACADEMIC CONTEXT SELECTOR</Text>
+            <Pressable
+              style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
+              onPress={handleExport}
+            >
+              <MaterialIcons name="picture-as-pdf" size={14} color={Colors.primary} />
+              <Text style={styles.exportBtnText}>Export PDF</Text>
+            </Pressable>
+          </View>
+
+          {/* Context Chips Grid */}
+          <View style={styles.contextChipsRow}>
+            <View style={styles.contextChip}>
+              <Text style={styles.contextChipKey}>DEPT</Text>
+              <Text style={styles.contextChipVal}>{activeDepartment}</Text>
+            </View>
+            <View style={styles.contextChip}>
+              <Text style={styles.contextChipKey}>YEAR</Text>
+              <Text style={styles.contextChipVal}>{activeYear}</Text>
+            </View>
+            <View style={styles.contextChip}>
+              <Text style={styles.contextChipKey}>SEM</Text>
+              <Text style={styles.contextChipVal}>Sem V</Text>
+            </View>
+            <View style={[styles.contextChip, styles.contextChipActive]}>
+              <Text style={[styles.contextChipKey, styles.contextChipKeyActive]}>SEC</Text>
+              <Text style={[styles.contextChipVal, styles.contextChipValActive]}>{activeSection}</Text>
+            </View>
           </View>
 
           {/* Day Tabs */}
@@ -165,11 +253,20 @@ export default function WeeklyTimetableScreen() {
         {/* Timetable List Section */}
         <View style={styles.daysListContainer}>
           {visibleDays.map((day) => {
-            const sessions = getClassSessionsByDay(day.id, 'CSE-C');
+            // Select sessions strictly from single MASTER_TIMETABLE_SESSIONS
+            const sessions = getClassTimetable(
+              {
+                department: activeDepartment,
+                year: activeYear,
+                semester: activeSemester,
+                section: activeSection,
+              },
+              { day: day.id }
+            );
 
             return (
               <View key={day.id} style={styles.dayCardWrapper}>
-                {/* Header Banner */}
+                {/* Day Header Banner */}
                 <View
                   style={[
                     styles.dayCardHeader,
@@ -201,11 +298,12 @@ export default function WeeklyTimetableScreen() {
                   </View>
                 </View>
 
-                {/* Sessions list */}
+                {/* Sessions list with interstitial breaks */}
                 <View style={styles.dayCardBody}>
                   {sessions.map((session, idx) => (
                     <React.Fragment key={session.id || idx}>
                       <TimetableCard session={session} />
+
                       {/* Interstitial breaks */}
                       {session.period === 'P2' && (
                         <View style={styles.breakBanner}>
@@ -239,7 +337,10 @@ export default function WeeklyTimetableScreen() {
         {/* Footer info */}
         <View style={styles.footerNote}>
           <Text style={styles.footerNoteText}>
-            Autonomous Regulation R2022 • Master Grid v4.2 • Dept of CSE
+            Autonomous Regulation R2022 • Master Grid {timetableVersion.versionLabel || 'v4.2'} • Dept of {activeDepartment}
+          </Text>
+          <Text style={styles.footerSubText}>
+            Derived from single MASTER_TIMETABLE_SESSIONS • Shared with Faculty Portal
           </Text>
         </View>
       </ScrollView>
@@ -256,185 +357,204 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.margin,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl,
+    gap: Spacing.sm,
   },
-  overviewCard: {
-    marginBottom: Spacing.sm,
+  governanceCard: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: 3,
   },
-  overviewHeader: {
+  govTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  govLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  govTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: Typography.labelMono.fontFamily,
+    letterSpacing: 0.4,
+  },
+  govPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.full,
+  },
+  govPillText: {
+    fontSize: 8,
+    fontWeight: '800',
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  govSub: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  contextCard: {
+    padding: Spacing.sm,
+  },
+  contextHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  termInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  pulsePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  blueDot: {
-    width: 6,
-    height: 6,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.secondary,
-  },
-  pulsePillText: {
+  contextSectionLabel: {
     fontSize: 9,
     fontWeight: '700',
     color: Colors.secondary,
     fontFamily: Typography.labelMono.fontFamily,
-  },
-  periodsPill: {
-    backgroundColor: Colors.surfaceContainerHigh,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  periodsPillText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: Colors.onSurfaceVariant,
-    fontFamily: Typography.labelMono.fontFamily,
-  },
-  exportBtnsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    letterSpacing: 0.5,
   },
   exportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.xs,
   },
   exportBtnText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: Colors.primary,
   },
-  classTitleRow: {
+  contextChipsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: Spacing.sm,
   },
-  classHeading: {
-    fontSize: 16,
+  contextChip: {
+    flex: 1,
+    backgroundColor: Colors.surfaceContainerLow,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.surfaceContainerHighest,
+  },
+  contextChipActive: {
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
+  },
+  contextChipKey: {
+    fontSize: 7,
     fontWeight: '700',
+    color: Colors.onSurfaceVariant,
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  contextChipKeyActive: {
+    color: 'rgba(255,255,255,0.8)',
+  },
+  contextChipVal: {
+    fontSize: 11,
+    fontWeight: '800',
     color: Colors.primary,
+    marginTop: 1,
+  },
+  contextChipValActive: {
+    color: '#ffffff',
   },
   dayTabsScroll: {
     gap: 6,
-    paddingTop: 2,
+    paddingTop: 4,
   },
   dayTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
+    gap: 5,
+    backgroundColor: Colors.surfaceContainerLow,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.surfaceContainerHighest,
   },
   dayTabPillActive: {
     backgroundColor: Colors.primary,
-    ...Shadows.sm,
+    borderColor: Colors.primary,
   },
   dayTabText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '700',
     color: Colors.onSurfaceVariant,
   },
   dayTabTextActive: {
     color: '#ffffff',
-    fontWeight: '700',
   },
   dayCountBadge: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceContainerHighest,
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 3,
+    borderRadius: BorderRadius.full,
   },
   dayCountBadgeLab: {
-    backgroundColor: 'rgba(33, 161, 115, 0.2)',
+    backgroundColor: Colors.tertiaryFixedDim,
   },
   dayCountBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   dayCountText: {
-    fontSize: 9,
+    fontSize: 8,
+    fontWeight: '800',
     color: Colors.onSurfaceVariant,
     fontFamily: Typography.labelMono.fontFamily,
   },
   dayCountTextLab: {
     color: Colors.onTertiaryContainer,
-    fontWeight: '700',
   },
   dayCountTextActive: {
     color: '#ffffff',
-    fontWeight: '700',
   },
   legendBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: Colors.surfaceContainerLowest,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 6,
-    paddingHorizontal: 4,
-    marginBottom: Spacing.sm,
-    flexWrap: 'wrap',
-    gap: 8,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.surfaceContainerLowest,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.sm,
-    ...Shadows.sm,
   },
   legendDot: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     borderRadius: BorderRadius.full,
   },
   legendText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
     color: Colors.onSurfaceVariant,
     fontFamily: Typography.labelMono.fontFamily,
   },
   daysListContainer: {
-    gap: 14,
+    gap: Spacing.md,
   },
   dayCardWrapper: {
     backgroundColor: Colors.surfaceContainerLowest,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
     ...Shadows.sm,
-    borderWidth: 1,
-    borderColor: Colors.surfaceContainer,
   },
   dayCardHeader: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
   },
   dayCardHeaderLab: {
     backgroundColor: Colors.tertiaryContainer,
@@ -445,86 +565,93 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayCardHeaderTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 0.5,
+    fontFamily: Typography.labelMono.fontFamily,
   },
   daySlotsBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: BorderRadius.full,
   },
   daySlotsBadgeLab: {
-    backgroundColor: 'rgba(104, 219, 169, 0.25)',
+    backgroundColor: Colors.tertiaryFixed,
   },
   daySlotsBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: 8,
+    fontWeight: '800',
     color: '#ffffff',
     fontFamily: Typography.labelMono.fontFamily,
   },
   daySlotsBadgeTextLab: {
-    color: Colors.tertiaryFixed,
+    color: Colors.onTertiaryContainer,
   },
   dayCardBody: {
-    padding: Spacing.md,
+    padding: Spacing.sm,
+    gap: 8,
   },
   breakBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
-    marginVertical: 4,
+    gap: 6,
+    backgroundColor: Colors.surfaceContainerLow,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.secondary,
   },
   breakBannerTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.onSurfaceVariant,
-    flex: 1,
-    marginLeft: 6,
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.secondary,
   },
   breakBannerTime: {
     fontSize: 9,
-    color: Colors.outline,
+    color: Colors.onSurfaceVariant,
+    marginLeft: 'auto',
     fontFamily: Typography.labelMono.fontFamily,
   },
   lunchBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surfaceContainerHigh,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: BorderRadius.md,
-    marginVertical: 4,
+    gap: 6,
+    backgroundColor: Colors.surfaceContainer,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.secondaryContainer,
   },
   lunchBannerTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.primary,
-    flex: 1,
-    marginLeft: 6,
   },
   lunchBannerTime: {
     fontSize: 9,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.onSurfaceVariant,
+    marginLeft: 'auto',
     fontFamily: Typography.labelMono.fontFamily,
   },
   footerNote: {
     alignItems: 'center',
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: 2,
   },
   footerNoteText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.onSurfaceVariant,
+    fontFamily: Typography.labelMono.fontFamily,
+  },
+  footerSubText: {
     fontSize: 9,
     color: Colors.outline,
-    fontFamily: Typography.labelMono.fontFamily,
-    textTransform: 'uppercase',
   },
   pressed: {
     opacity: 0.8,

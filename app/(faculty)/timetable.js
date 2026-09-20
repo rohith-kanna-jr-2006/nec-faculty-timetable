@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,16 +18,25 @@ import {
   getFacultySessionsByDay,
   getFacultyWorkload,
   getTodaySchedule,
+  getTimetableVersion,
+  subscribeTimetableVersion,
+  TIMETABLE_STATUSES,
 } from '../../constants/demoData';
 
 export default function MyTimetableScreen() {
   const [activeTab, setActiveTab] = useState('today'); // 'today' | 'weekly'
   const [selectedDayFilter, setSelectedDayFilter] = useState('all');
+  const [timetableVersion, setTimetableVersion] = useState(getTimetableVersion());
 
-  const facultySessions = getFacultySessions();
-  const workload = getFacultyWorkload();
-  const todayData = getTodaySchedule();
-  const wedSessions = getFacultySessionsByDay('WED');
+  useEffect(() => {
+    const unsub = subscribeTimetableVersion((v) => setTimetableVersion({ ...v }));
+    return unsub;
+  }, []);
+
+  const facultySessions = getFacultySessions(FACULTY_PROFILE.id);
+  const workload = getFacultyWorkload(FACULTY_PROFILE.id);
+  const todayData = getTodaySchedule(FACULTY_PROFILE.id);
+  const wedSessions = getFacultySessionsByDay('WED', FACULTY_PROFILE.id);
 
   const daysConfig = [
     { id: 'MON', label: 'Mon', full: 'Monday' },
@@ -82,19 +91,61 @@ export default function MyTimetableScreen() {
         <Card variant="low" style={styles.syncCard}>
           <View style={styles.syncRow}>
             <View style={styles.syncIconBox}>
-              <MaterialIcons name="verified" size={18} color={Colors.secondary} />
+              <MaterialIcons
+                name={
+                  timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED
+                    ? 'verified'
+                    : timetableVersion.status === TIMETABLE_STATUSES.APPROVED
+                    ? 'check-circle'
+                    : 'hourglass-top'
+                }
+                size={18}
+                color={
+                  timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED
+                    ? Colors.secondary
+                    : timetableVersion.status === TIMETABLE_STATUSES.APPROVED
+                    ? '#047857'
+                    : '#c2410c'
+                }
+              />
             </View>
             <View style={styles.syncTextCol}>
-              <Text style={styles.syncStatusTag}>SYNCED & LOCKED</Text>
+              <Text
+                style={[
+                  styles.syncStatusTag,
+                  timetableVersion.status === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL && { color: '#c2410c' },
+                  timetableVersion.status === TIMETABLE_STATUSES.APPROVED && { color: '#047857' },
+                ]}
+              >
+                {timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED
+                  ? 'OFFICIAL SCHEDULE • PUBLISHED'
+                  : timetableVersion.status === TIMETABLE_STATUSES.APPROVED
+                  ? 'APPROVED BY HOD • PENDING RELEASE'
+                  : 'DRAFT SCHEDULE • PENDING HOD APPROVAL'}
+              </Text>
               <Text style={styles.syncStatusDesc} numberOfLines={1}>
-                Verified by AC {FACULTY_PROFILE.academicCoordinator} (Sem V) • Venues active
+                {timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED
+                  ? `Signed off by HOD & AC ${FACULTY_PROFILE.academicCoordinator} • Active`
+                  : timetableVersion.status === TIMETABLE_STATUSES.APPROVED
+                  ? 'Approved by Dr. S. K. Nandha (HOD / CSE) • Awaiting public release'
+                  : 'Provisional draft slots • Class timetable under HOD review'}
               </Text>
             </View>
             <View style={styles.termPill}>
-              <Text style={styles.termPillText}>AY 24-25</Text>
+              <Text style={styles.termPillText}>{timetableVersion.versionLabel || 'v4.2'}</Text>
             </View>
           </View>
         </Card>
+
+        {/* Provisional Notice when unapproved */}
+        {timetableVersion.status === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL && (
+          <View style={styles.provisionalNoticeBanner}>
+            <MaterialIcons name="info-outline" size={16} color="#c2410c" />
+            <Text style={styles.provisionalNoticeText}>
+              PROVISIONAL SCHEDULE: Timetable grid {timetableVersion.versionLabel || 'v4.2'} is currently awaiting institutional approval from Dr. S. K. Nandha (HOD / CSE).
+            </Text>
+          </View>
+        )}
 
         {/* Faculty Identity & Academic Card */}
         <Card style={styles.profileCard}>
@@ -119,11 +170,44 @@ export default function MyTimetableScreen() {
             </View>
           </View>
 
-          {/* Published Status Pill */}
-          <View style={styles.publishedStatusBox}>
+          {/* Published / Approval Status Pill */}
+          <View
+            style={[
+              styles.publishedStatusBox,
+              timetableVersion.status === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL && {
+                backgroundColor: '#fff7ed',
+              },
+              timetableVersion.status === TIMETABLE_STATUSES.APPROVED && {
+                backgroundColor: '#ecfdf5',
+              },
+            ]}
+          >
             <View style={styles.statusDotRow}>
-              <View style={styles.greenPulse} />
-              <Text style={styles.statusPublishedText}>Official {FACULTY_PROFILE.academicYear} • Published</Text>
+              <View
+                style={[
+                  styles.greenPulse,
+                  timetableVersion.status === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL && {
+                    backgroundColor: '#ea580c',
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusPublishedText,
+                  timetableVersion.status === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL && {
+                    color: '#c2410c',
+                  },
+                  timetableVersion.status === TIMETABLE_STATUSES.APPROVED && {
+                    color: '#047857',
+                  },
+                ]}
+              >
+                {timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED
+                  ? `Official ${FACULTY_PROFILE.academicYear} • Published`
+                  : timetableVersion.status === TIMETABLE_STATUSES.APPROVED
+                  ? 'Approved by HOD • Ready to Release'
+                  : 'Provisional Draft • Pending HOD Approval'}
+              </Text>
             </View>
             <View style={styles.viewerModeRow}>
               <MaterialIcons name="lock" size={12} color={Colors.onSurfaceVariant} />
@@ -1258,6 +1342,22 @@ const styles = StyleSheet.create({
     color: Colors.outline,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+  provisionalNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  provisionalNoticeText: {
+    flex: 1,
+    fontSize: 10,
+    color: '#9a3412',
+    lineHeight: 14,
   },
   pressed: {
     opacity: 0.8,

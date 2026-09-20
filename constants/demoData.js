@@ -1,26 +1,23 @@
-// Single Source of Truth for Academic Nexus / NEC Faculty App
-// Derived from Google Stitch Project: 2431280884270750586
+/**
+ * Academic Nexus / NEC Faculty Mobile Application
+ * Core Business Rules, Application Configuration, and Runtime Data Store
+ *
+ * NOTE: All hardcoded mock institutional records have been removed.
+ * All runtime collections start empty and are populated solely via user input
+ * or connected authoritative backend sources.
+ */
 
-export const FACULTY_PROFILE = {
-  id: 'CSE-FAC-042',
-  name: 'Ms. C. Navamani',
-  initials: 'CN',
-  designation: 'Assistant Professor',
-  department: 'Dept. of Computer Science & Engg.',
-  shortDept: 'CSE',
-  email: 'c.navamani@nandhaengg.org',
-  academicYear: 'AY 2024-25 Odd',
-  semester: 'Semester V',
-  regulation: 'Autonomous Regulation R2022',
-  status: 'Active',
-  role: 'Faculty Viewer (AC Controlled)',
-  academicCoordinator: 'Mr. R. Manikandan',
-  maxWorkloadThreshold: 16,
-  phone: '+91 98765 43210',
-  cabin: 'CSE Block 2nd Floor, Staff Room #208',
-  experience: '6 Years Academic & Industry',
-  specialization: 'Human-Computer Interaction, UI/UX Systems',
-};
+// ============================================================
+// 1. STATIC APPLICATION CONFIGURATION & SCHEDULE DEFINITIONS
+// ============================================================
+
+export const WEEK_DAYS = [
+  { id: 'MON', label: 'Mon', full: 'Monday' },
+  { id: 'TUE', label: 'Tue', full: 'Tuesday' },
+  { id: 'WED', label: 'Wed', full: 'Wednesday' },
+  { id: 'THU', label: 'Thu', full: 'Thursday' },
+  { id: 'FRI', label: 'Fri', full: 'Friday' },
+];
 
 export const PERIOD_TIMINGS = [
   { period: 'P1', startTime: '09:15', endTime: '10:05', label: '09:15 – 10:05' },
@@ -35,785 +32,248 @@ export const PERIOD_TIMINGS = [
   { period: 'P7', startTime: '03:40', endTime: '04:30', label: '03:40 – 04:30' },
 ];
 
-/**
- * Unified Timetable Session Model
- * Every session in the system is an instance of TimetableSession.
- */
-const RAW_MASTER_TIMETABLE_SESSIONS = [
-  // ---------------- MONDAY ----------------
-  {
-    id: 'MON-P1',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P1',
-    startTime: '09:15',
-    endTime: '10:05',
-    courseCode: '22CSC14',
-    courseName: 'Compiler Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. K. Shanmugapriya',
-    facultyId: 'CSE-FAC-018',
-    icon: 'terminal',
-  },
-  {
-    id: 'MON-P2',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P2',
-    startTime: '10:05',
-    endTime: '10:55',
-    courseCode: '22CSC15',
-    courseName: 'Full Stack Development',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Mr. R. Manikandan',
-    facultyId: 'CSE-FAC-001',
-    icon: 'layers',
-  },
-  {
-    id: 'MON-P3',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P3',
-    startTime: '11:10',
-    endTime: '12:00',
-    courseCode: '22CSC16',
-    courseName: 'Object Oriented Software Engg (OOSE)',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. N. Indumathi',
-    facultyId: 'CSE-FAC-024',
-    icon: 'account-tree',
-  },
-  {
-    id: 'MON-P4-CSEC',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P4',
-    startTime: '12:00',
-    endTime: '12:50',
-    courseCode: '22CSX01',
-    courseName: 'Deep Learning',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'psychology',
-  },
-  {
-    id: 'MON-P4-CSEB-NAVAMANI',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P4',
-    startTime: '12:00',
-    endTime: '12:50',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-B',
-    yearSemester: 'III / V',
-    room: 'CSE-202',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    icon: 'draw',
-  },
-  {
-    id: 'MON-P5',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P5',
-    startTime: '01:45',
-    endTime: '02:35',
-    courseCode: '22CSX21',
-    courseName: 'Crypto & NetSec',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. K. E. Eswari',
-    facultyId: 'CSE-FAC-029',
-    icon: 'security',
-  },
-  {
-    id: 'MON-P6',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P6',
-    startTime: '02:35',
-    endTime: '03:25',
-    courseCode: '22MAN08R',
-    courseName: 'Soft Skills Development',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Dr. P. Dhivyapriya',
-    facultyId: 'CSE-FAC-011',
-    icon: 'record-voice-over',
-  },
-  {
-    id: 'MON-P7',
-    day: 'MON',
-    dayFull: 'Monday',
-    period: 'P7',
-    startTime: '03:40',
-    endTime: '04:30',
-    courseCode: '22MAN08R',
-    courseName: 'Soft Skills & Practice',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. M. Priyadharsini',
-    facultyId: 'CSE-FAC-035',
-    icon: 'groups',
-  },
+export const BREAK_TIMINGS = PERIOD_TIMINGS.filter((p) => p.type === 'break' || p.type === 'lunch');
 
-  // ---------------- TUESDAY ----------------
-  {
-    id: 'TUE-P1-P4-LAB',
-    day: 'TUE',
-    dayFull: 'Tuesday',
-    period: 'P1-P4',
-    isSpan: true,
-    spanCount: 4,
-    startTime: '09:15',
-    endTime: '12:50',
-    courseCode: '22CSP09',
-    courseName: 'Full Stack Development Laboratory (FSD LAB)',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE Lab 2',
-    roomType: 'Dedicated Laboratory',
-    sessionType: 'LAB',
-    faculty: 'Mr. R. Manikandan & Ms. K. Shanmugapriya',
-    facultyId: 'CSE-FAC-001',
-    icon: 'terminal',
-    notes: 'Continuous 4-period laboratory block before lunch',
-  },
-  {
-    id: 'TUE-P5',
-    day: 'TUE',
-    dayFull: 'Tuesday',
-    period: 'P5',
-    startTime: '01:45',
-    endTime: '02:35',
-    courseCode: '22CSC14',
-    courseName: 'Compiler Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. K. Shanmugapriya',
-    facultyId: 'CSE-FAC-018',
-    icon: 'terminal',
-  },
-  {
-    id: 'TUE-P6-CSEC-NAVAMANI',
-    day: 'TUE',
-    dayFull: 'Tuesday',
-    period: 'P6',
-    startTime: '02:35',
-    endTime: '03:25',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    icon: 'draw',
-  },
-  {
-    id: 'TUE-P7',
-    day: 'TUE',
-    dayFull: 'Tuesday',
-    period: 'P7',
-    startTime: '03:40',
-    endTime: '04:30',
-    courseCode: 'NPTEL',
-    courseName: 'NPTEL Online Course Mentoring',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. N. Bhuvaneshwari',
-    facultyId: 'CSE-FAC-026',
-    icon: 'school',
-  },
+// ============================================================
+// 2. BUSINESS RULES & GOVERNANCE CONSTANTS
+// ============================================================
 
-  // ---------------- WEDNESDAY ----------------
-  {
-    id: 'WED-P1',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P1',
-    startTime: '09:15',
-    endTime: '10:05',
-    courseCode: '22CSC15',
-    courseName: 'Full Stack Dev',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Mr. R. Manikandan',
-    facultyId: 'CSE-FAC-001',
-    icon: 'layers',
-  },
-  {
-    id: 'WED-P2-CSEC',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P2',
-    startTime: '10:05',
-    endTime: '10:55',
-    courseCode: '22CSC16',
-    courseName: 'OOSE',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. N. Indumathi',
-    facultyId: 'CSE-FAC-024',
-    icon: 'account-tree',
-  },
-  {
-    id: 'WED-P2-CSEB-NAVAMANI',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P2',
-    startTime: '10:05',
-    endTime: '10:55',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-B',
-    yearSemester: 'III / V',
-    room: 'CSE-202',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    status: 'Completed',
-    icon: 'draw',
-  },
-  {
-    id: 'WED-P3',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P3',
-    startTime: '11:10',
-    endTime: '12:00',
-    courseCode: '22CSX01',
-    courseName: 'Deep Learning',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'psychology',
-  },
-  {
-    id: 'WED-P4-CSEC-NAVAMANI',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P4',
-    startTime: '12:00',
-    endTime: '12:50',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    status: 'Upcoming',
-    startsIn: '45m',
-    icon: 'draw',
-    isHeroNext: true,
-  },
-  {
-    id: 'WED-P5',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P5',
-    startTime: '01:45',
-    endTime: '02:35',
-    courseCode: '22CSC14',
-    courseName: 'Compiler Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. K. Shanmugapriya',
-    facultyId: 'CSE-FAC-018',
-    icon: 'terminal',
-  },
-  {
-    id: 'WED-P6',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P6',
-    startTime: '02:35',
-    endTime: '03:25',
-    courseCode: 'SD',
-    courseName: 'Skill Development',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'bolt',
-  },
-  {
-    id: 'WED-P7',
-    day: 'WED',
-    dayFull: 'Wednesday',
-    period: 'P7',
-    startTime: '03:40',
-    endTime: '04:30',
-    courseCode: 'SD',
-    courseName: 'Skill Development Hands-on',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'code',
-  },
-
-  // ---------------- THURSDAY ----------------
-  {
-    id: 'THU-P1-P4-LAB',
-    day: 'THU',
-    dayFull: 'Thursday',
-    period: 'P1-P4',
-    isSpan: true,
-    spanCount: 4,
-    startTime: '09:15',
-    endTime: '12:50',
-    courseCode: '22CSP10',
-    courseName: 'Object Oriented Software Engineering Laboratory (OOSE LAB)',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE Software Lab 1',
-    roomType: 'Dedicated Laboratory',
-    sessionType: 'LAB',
-    faculty: 'Ms. N. Indumathi & Ms. N. Bhuvaneshwari',
-    facultyId: 'CSE-FAC-024',
-    icon: 'account-tree',
-    notes: 'Continuous 4-period laboratory block before lunch',
-  },
-  {
-    id: 'THU-P5',
-    day: 'THU',
-    dayFull: 'Thursday',
-    period: 'P5',
-    startTime: '01:45',
-    endTime: '02:35',
-    courseCode: '22CSX21',
-    courseName: 'Crypto & NetSec',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. K. E. Eswari',
-    facultyId: 'CSE-FAC-029',
-    icon: 'security',
-  },
-  {
-    id: 'THU-P6',
-    day: 'THU',
-    dayFull: 'Thursday',
-    period: 'P6',
-    startTime: '02:35',
-    endTime: '03:25',
-    courseCode: 'PBL',
-    courseName: 'Project Based Learning',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'lightbulb',
-  },
-  {
-    id: 'THU-P7',
-    day: 'THU',
-    dayFull: 'Thursday',
-    period: 'P7',
-    startTime: '03:40',
-    endTime: '04:30',
-    courseCode: 'PBL',
-    courseName: 'Project Mentoring & Review',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Ms. V. Mythily',
-    facultyId: 'CSE-FAC-014',
-    icon: 'forum',
-  },
-
-  // ---------------- FRIDAY ----------------
-  {
-    id: 'FRI-P1',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P1',
-    startTime: '09:15',
-    endTime: '10:05',
-    courseCode: '22CSC14',
-    courseName: 'Compiler Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. K. Shanmugapriya',
-    facultyId: 'CSE-FAC-018',
-    icon: 'terminal',
-  },
-  {
-    id: 'FRI-P2',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P2',
-    startTime: '10:05',
-    endTime: '10:55',
-    courseCode: '22CSC15',
-    courseName: 'Full Stack Dev',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Mr. R. Manikandan',
-    facultyId: 'CSE-FAC-001',
-    icon: 'layers',
-  },
-  {
-    id: 'FRI-P3',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P3',
-    startTime: '11:10',
-    endTime: '12:00',
-    courseCode: '22CSC16',
-    courseName: 'OOSE',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'THEORY',
-    faculty: 'Ms. N. Indumathi',
-    facultyId: 'CSE-FAC-024',
-    icon: 'account-tree',
-  },
-  {
-    id: 'FRI-P4',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P4',
-    startTime: '12:00',
-    endTime: '12:50',
-    courseCode: '22CSX21',
-    courseName: 'Crypto & NetSec',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. K. E. Eswari',
-    facultyId: 'CSE-FAC-029',
-    icon: 'security',
-  },
-  {
-    id: 'FRI-P5',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P5',
-    startTime: '01:45',
-    endTime: '02:35',
-    courseCode: '22CSX01',
-    courseName: 'Deep Learning',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. S. Geetha',
-    facultyId: 'CSE-FAC-031',
-    icon: 'psychology',
-  },
-  {
-    id: 'FRI-P6-CSEC-NAVAMANI',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P6',
-    startTime: '02:35',
-    endTime: '03:25',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    icon: 'draw',
-  },
-  {
-    id: 'FRI-P2-CSEB-NAVAMANI',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P2',
-    startTime: '10:05',
-    endTime: '10:55',
-    courseCode: '22CSX42',
-    courseName: 'UI/UX Design',
-    classSection: 'CSE-B',
-    yearSemester: 'III / V',
-    room: 'CSE-202',
-    roomType: 'Smart Classroom',
-    sessionType: 'ELECTIVE',
-    faculty: 'Ms. C. Navamani',
-    facultyId: 'CSE-FAC-042',
-    icon: 'draw',
-  },
-  {
-    id: 'FRI-P7',
-    day: 'FRI',
-    dayFull: 'Friday',
-    period: 'P7',
-    startTime: '03:40',
-    endTime: '04:30',
-    courseCode: 'REMEDIAL',
-    courseName: 'Library / Remedial Seminar',
-    classSection: 'CSE-C',
-    yearSemester: 'III / V',
-    room: 'CSE-204',
-    roomType: 'Smart Classroom',
-    sessionType: 'OTHER',
-    faculty: 'Dr. K. S. Arul',
-    facultyId: 'CSE-FAC-004',
-    icon: 'local-library',
-  },
-];
-
-/**
- * Authoritative Master Timetable Dataset (Single Source of Truth)
- * Conforms to the standard TimetableSession model.
- */
-export const MASTER_TIMETABLE_SESSIONS = RAW_MASTER_TIMETABLE_SESSIONS.map((s) => ({
-  academicYear: '2024-25',
-  department: 'CSE',
-  year: 'III Year',
-  semester: 'Semester V',
-  spanCount: s.spanCount || (s.isSpan ? 4 : 1),
-  isSpan: !!s.isSpan,
-  ...s,
-  section: s.section || s.classSection || 'CSE-C',
-  classSection: s.classSection || s.section || 'CSE-C',
-  faculty: s.faculty || s.facultyName,
-  facultyName: s.facultyName || s.faculty,
-}));
-
-export const ASSIGNED_COURSES = [
-  {
-    code: '22CSX42',
-    name: 'UI/UX Design',
-    category: 'Professional Elective II (PE-II)',
-    reg: 'Reg 2022',
-    credits: 3,
-    contactPeriods: 6,
-    sections: [
-      { section: 'Section B', periodsPerWeek: 3, room: 'CSE-202', cohort: 'SEC B (Sem V)', studentsCount: 56 },
-      { section: 'Section C', periodsPerWeek: 3, room: 'CSE-204', cohort: 'SEC C (Sem V)', studentsCount: 58 },
-    ],
-    syllabusProgress: 'Unit II • In-Progress',
-    sessionPlanTotal: 45,
-    sessionPlanCompleted: 14,
-    icon: 'devices',
-  },
-];
-
-export const NOTIFICATIONS_DATA = [
-  {
-    id: 'notif-1',
-    title: 'Official Timetable Published',
-    message: 'The official timetable for III Year CSE Semester V (Odd AY 2024-25) has been published by Academic Coordinator Mr. R. Manikandan.',
-    timestamp: '10:30 AM (2h ago)',
-    category: 'timetable',
-    status: 'unread',
-    icon: 'campaign',
-    badge: 'TIMETABLE',
-    author: 'R. Manikandan (AC)',
-    actionRoute: '/(faculty)/timetable',
-  },
-  {
-    id: 'notif-2',
-    title: 'Venue Allotment Update',
-    message: 'Smart Classroom CSE-204 has been confirmed for 22CSX42 UI/UX Design (Sec C) on Wednesday Period 4 (12:00 – 12:50 PM).',
-    timestamp: "Y'day 04:15 PM",
-    category: 'timetable',
-    status: 'unread',
-    icon: 'meeting-room',
-    badge: 'ROOM ALLOCATION',
-    author: 'IT Cell Venue Desk',
-    actionRoute: '/(faculty)/timetable',
-  },
-  {
-    id: 'notif-3',
-    title: 'Faculty Allocation Confirmed',
-    message: 'You have been mapped as Course In-charge for 22CSX42 UI/UX Design across Section B (3 P/Wk) & Section C (3 P/Wk).',
-    timestamp: '2d ago',
-    category: 'assignment',
-    status: 'read',
-    icon: 'assignment-ind',
-    badge: 'FACULTY ASSIGNMENT',
-    author: 'HOD CSE',
-    actionRoute: '/(faculty)/workload',
-  },
-  {
-    id: 'notif-4',
-    title: 'Department Academic Circular',
-    message: 'Autonomous Regulation R2022 Odd Semester syllabus commencement schedule and internal assessment cycle dates have been updated.',
-    timestamp: '3d ago',
-    category: 'academic',
-    status: 'read',
-    icon: 'school',
-    badge: 'ACADEMIC OFFICE',
-    author: 'Principal Office',
-    actionRoute: null,
-  },
-];
-
-export const VALIDATION_CHECKS = [
-  {
-    id: 'val-1',
-    title: 'Faculty Schedule Conflict',
-    desc: 'Zero overlapping or colliding lecture slots assigned across Section B and Section C.',
-    status: 'PASSED (0 Conflicts)',
-    badgeColor: 'tertiary',
-    metric: '0 / 6 Overlaps',
-    icon: 'check',
-  },
-  {
-    id: 'val-2',
-    title: 'Institutional Release',
-    desc: 'Current active schedule is officially signed off and released by the Class Advisor & Academic Coordinator.',
-    status: 'PUBLISHED',
-    badgeColor: 'secondary',
-    metric: 'Master v4.2 Release',
-    icon: 'check',
-  },
-  {
-    id: 'val-3',
-    title: 'Session & Break Integrity',
-    desc: 'All assigned periods strictly respect AICTE & Anna University mandatory break intervals (Tea Break 10:55 AM, Lunch 12:50 PM, Evening Break 03:25 PM).',
-    status: 'COMPLIANT',
-    badgeColor: 'tertiary',
-    metric: '100% Rule Adherence',
-    icon: 'check',
-  },
-  {
-    id: 'val-4',
-    title: 'Course Curriculum Match',
-    desc: 'Assigned course 22CSX42 UI/UX Design matches official Board of Studies curriculum credits.',
-    status: 'VERIFIED',
-    badgeColor: 'tertiary',
-    metric: '2 Sections Mapped',
-    icon: 'check',
-  },
-  {
-    id: 'val-5',
-    title: 'Workload Compliance',
-    desc: 'Assigned 6 teaching periods/week complies with department threshold norms (Max 16 Periods/Week for Asst. Prof).',
-    status: 'WITHIN NORMS',
-    badgeColor: 'secondary',
-    metric: '6 / 16 Max Periods',
-    icon: 'check',
-  },
-];
-
-/**
- * ============================================================
- * TIMETABLE VERSION & HOD APPROVAL STATE MODEL
- * ============================================================
- * The Class Timetable is subject to institutional approval by HOD.
- * Workflow: DRAFT -> GENERATED -> PENDING_HOD_APPROVAL -> APPROVED -> PUBLISHED
- */
-export const TIMETABLE_STATUSES = {
-  DRAFT: 'DRAFT',
-  GENERATED: 'GENERATED',
-  PENDING_HOD_APPROVAL: 'PENDING_HOD_APPROVAL',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  PUBLISHED: 'PUBLISHED',
+export const COURSE_ALLOCATION_RULES = {
+  SINGLE_FACULTY: 'SINGLE_FACULTY', // Theory: exactly one faculty
+  PRIMARY_PLUS_ADDITIONAL: 'PRIMARY_PLUS_ADDITIONAL', // Lab: primary linked to theory + additional staff
+  MINIMUM_TWO: 'MINIMUM_TWO', // SAS: minimum two faculty
+  STAFFS_HANDLED: 'STAFFS_HANDLED', // Other/PBL: staff count (1, 2, or 3)
 };
 
+export const TIMETABLE_STATUSES = {
+  NO_TIMETABLE: 'NO_TIMETABLE', // Initial state before any generation has run
+  DRAFT: 'DRAFT', // Candidate grid being constructed
+  GENERATED: 'GENERATED', // Solver executed with 0 hard conflicts
+  PENDING_HOD_APPROVAL: 'PENDING_HOD_APPROVAL', // Submitted for HOD approval
+  APPROVED: 'APPROVED', // Formally approved by HOD
+  REJECTED: 'REJECTED', // Rejected / revision requested by HOD
+  PUBLISHED: 'PUBLISHED', // Synchronized and visible across campus
+};
+
+export const assignmentAuthorityRole = 'ACADEMIC_COORDINATOR';
+
+// ============================================================
+// 3. RUNTIME STATE STORES (INITIALIZED EMPTY - ZERO MOCK DATA)
+// ============================================================
+
+// Academic Context (Null by default)
+let currentAcademicContext = {
+  department: null,
+  year: null,
+  semester: null,
+  section: null,
+  academicYear: null,
+};
+
+// Curriculum Courses (Empty array by default)
+let currentCurriculumCourses = [];
+
+// Course Faculty Handlers Pool (Empty map by default)
+let currentCourseFacultyHandlers = {};
+
+// Course Allocation Configuration (Empty map by default)
+let currentCourseAllocationConfig = {};
+
+// Faculty Allocations (Empty map by default: all courses start NOT ASSIGNED)
+let currentFacultyAllocations = {};
+
+// Master Timetable Sessions (Empty array by default: 0 sessions until generated)
+let currentMasterTimetableSessions = [];
+
+// Authenticated Profiles (Null by default)
+let currentFacultyProfile = null;
+let currentCoordinatorProfile = null;
+
+// Notifications (Empty array by default)
+let currentNotifications = [];
+
+// Timetable Version State (Initialized to NO_TIMETABLE)
 export const INITIAL_TIMETABLE_VERSION = {
-  id: 'VER-2024-25-ODD-CSEC-v4.2',
-  academicYear: '2024-25',
-  department: 'CSE',
-  year: 'III Year',
-  semester: 'Semester V',
-  section: 'CSE-C',
-  status: 'PENDING_HOD_APPROVAL',
-  versionLabel: 'v4.2',
-  generatedAt: '2024-10-20T09:30:00Z',
+  id: null,
+  academicYear: null,
+  department: null,
+  year: null,
+  semester: null,
+  section: null,
+  status: TIMETABLE_STATUSES.NO_TIMETABLE,
+  versionLabel: null,
+  generatedAt: null,
   approvedAt: null,
   approvedBy: null,
-  hodReviewer: 'Dr. S. K. Nandha (HOD / CSE)',
+  hodReviewer: null,
   rejectionReason: null,
-  totalRequiredPeriods: 35,
-  totalScheduledPeriods: 35,
+  totalRequiredPeriods: 0,
+  totalScheduledPeriods: 0,
   freePeriods: 0,
   hardConflicts: 0,
 };
 
 let activeTimetableVersion = { ...INITIAL_TIMETABLE_VERSION };
 const versionSubscribers = new Set();
+const stateSubscribers = new Set();
 
+// ============================================================
+// 4. EXPORTED COMPATIBILITY ALIASES (EMPTY BY DEFAULT)
+// ============================================================
+
+export let MASTER_TIMETABLE_SESSIONS = [];
+export let CURRICULUM_COURSES = [];
+export let COURSE_FACULTY_HANDLERS = {};
+export let COURSE_ALLOCATION_CONFIG = {};
+export let INITIAL_FACULTY_ALLOCATIONS = {};
+export let INITIAL_FACULTY_ASSIGNMENTS = [];
+export let FACULTY_ELIGIBILITY = {};
+export let FACULTY_PROFILE = null;
+export let AC_PROFILE = null;
+export let AC_FACULTY_LIST = [];
+export let ASSIGNED_COURSES = [];
+export let NOTIFICATIONS_DATA = [];
+export let VALIDATION_CHECKS = [];
+export let AC_CONFLICT_AUDITS = [];
+
+// ============================================================
+// 5. GETTER & SETTER SERVICES (REAL DATA READY)
+// ============================================================
+
+// Academic Context
+export function getAcademicContext() {
+  return { ...currentAcademicContext };
+}
+
+export function setAcademicContext(context = {}) {
+  currentAcademicContext = { ...currentAcademicContext, ...context };
+  notifyStateSubscribers();
+  return currentAcademicContext;
+}
+
+// Curriculum Courses
+export function getCurriculumCourses() {
+  return [...currentCurriculumCourses];
+}
+
+export function setCurriculumCourses(courses = []) {
+  currentCurriculumCourses = courses.map((c) => ({ ...c }));
+  CURRICULUM_COURSES = currentCurriculumCourses;
+  notifyStateSubscribers();
+  return currentCurriculumCourses;
+}
+
+// Course Faculty Handlers
+export function getCourseFacultyHandlers(courseCode) {
+  if (courseCode) {
+    return currentCourseFacultyHandlers[courseCode] || [];
+  }
+  return { ...currentCourseFacultyHandlers };
+}
+
+export function setCourseFacultyHandlers(courseCode, handlers = []) {
+  if (typeof courseCode === 'object') {
+    currentCourseFacultyHandlers = { ...courseCode };
+  } else {
+    currentCourseFacultyHandlers[courseCode] = handlers;
+  }
+  COURSE_FACULTY_HANDLERS = currentCourseFacultyHandlers;
+  notifyStateSubscribers();
+  return currentCourseFacultyHandlers;
+}
+
+// Faculty Allocations
+export function getFacultyAllocations() {
+  return { ...currentFacultyAllocations };
+}
+
+export function setFacultyAllocation(courseCode, allocation) {
+  currentFacultyAllocations[courseCode] = allocation;
+  INITIAL_FACULTY_ALLOCATIONS = currentFacultyAllocations;
+  notifyStateSubscribers();
+  return currentFacultyAllocations;
+}
+
+export function clearFacultyAllocations() {
+  currentFacultyAllocations = {};
+  INITIAL_FACULTY_ALLOCATIONS = {};
+  notifyStateSubscribers();
+}
+
+// Master Timetable Sessions
+export function getMasterTimetableSessions() {
+  return [...currentMasterTimetableSessions];
+}
+
+export function setMasterTimetableSessions(sessions = []) {
+  currentMasterTimetableSessions = sessions.map((s) => ({
+    ...s,
+    section: s.section || s.classSection || null,
+    classSection: s.classSection || s.section || null,
+    faculty: s.faculty || s.facultyName || null,
+    facultyName: s.facultyName || s.faculty || null,
+    spanCount: s.spanCount || (s.isSpan ? 4 : 1),
+    isSpan: !!s.isSpan,
+  }));
+  MASTER_TIMETABLE_SESSIONS = currentMasterTimetableSessions;
+  notifyStateSubscribers();
+  return currentMasterTimetableSessions;
+}
+
+export function clearMasterTimetableSessions() {
+  currentMasterTimetableSessions = [];
+  MASTER_TIMETABLE_SESSIONS = [];
+  activeTimetableVersion = { ...INITIAL_TIMETABLE_VERSION };
+  notifyVersionSubscribers();
+  notifyStateSubscribers();
+}
+
+// Faculty Profile
+export function getFacultyProfile() {
+  return currentFacultyProfile ? { ...currentFacultyProfile } : null;
+}
+
+export function setFacultyProfile(profile) {
+  currentFacultyProfile = profile ? { ...profile } : null;
+  FACULTY_PROFILE = currentFacultyProfile;
+  notifyStateSubscribers();
+  return currentFacultyProfile;
+}
+
+// Coordinator Profile
+export function getCoordinatorProfile() {
+  return currentCoordinatorProfile ? { ...currentCoordinatorProfile } : null;
+}
+
+export function setCoordinatorProfile(profile) {
+  currentCoordinatorProfile = profile ? { ...profile } : null;
+  AC_PROFILE = currentCoordinatorProfile;
+  notifyStateSubscribers();
+  return currentCoordinatorProfile;
+}
+
+// Notifications
+export function getNotifications() {
+  return [...currentNotifications];
+}
+
+export function setNotifications(notifs = []) {
+  currentNotifications = notifs.map((n) => ({ ...n }));
+  NOTIFICATIONS_DATA = currentNotifications;
+  notifyStateSubscribers();
+  return currentNotifications;
+}
+
+export function addNotification(notif) {
+  currentNotifications = [notif, ...currentNotifications];
+  NOTIFICATIONS_DATA = currentNotifications;
+  notifyStateSubscribers();
+  return currentNotifications;
+}
+
+// Timetable Version & Governance State
 export function getTimetableVersion(context = {}) {
-  return activeTimetableVersion;
+  return { ...activeTimetableVersion };
 }
 
 export function updateTimetableVersionStatus(newStatus, metadata = {}) {
@@ -821,25 +281,18 @@ export function updateTimetableVersionStatus(newStatus, metadata = {}) {
   activeTimetableVersion = {
     ...activeTimetableVersion,
     status: newStatus,
-    ...(newStatus === 'APPROVED' || newStatus === 'PUBLISHED'
+    ...(newStatus === TIMETABLE_STATUSES.APPROVED || newStatus === TIMETABLE_STATUSES.PUBLISHED
       ? {
-          approvedBy: metadata.approvedBy || 'Dr. S. K. Nandha (HOD / CSE)',
+          approvedBy: metadata.approvedBy || activeTimetableVersion.approvedBy,
           approvedAt: activeTimetableVersion.approvedAt || timestamp,
         }
       : {}),
     ...(metadata.rejectionReason ? { rejectionReason: metadata.rejectionReason } : {}),
-    ...(newStatus === 'PENDING_HOD_APPROVAL' ? { rejectionReason: null } : {}),
-    ...(newStatus === 'REJECTED' ? { approvedAt: null, approvedBy: null } : {}),
+    ...(newStatus === TIMETABLE_STATUSES.PENDING_HOD_APPROVAL ? { rejectionReason: null } : {}),
+    ...(newStatus === TIMETABLE_STATUSES.REJECTED ? { approvedAt: null, approvedBy: null } : {}),
   };
 
-  versionSubscribers.forEach((cb) => {
-    try {
-      cb(activeTimetableVersion);
-    } catch (err) {
-      console.error('Error in timetable version subscriber:', err);
-    }
-  });
-
+  notifyVersionSubscribers();
   return activeTimetableVersion;
 }
 
@@ -848,20 +301,44 @@ export function subscribeTimetableVersion(callback) {
   return () => versionSubscribers.delete(callback);
 }
 
-/**
- * ============================================================
- * UNIFIED SELECTORS OVER MASTER_TIMETABLE_SESSIONS
- * ============================================================
- * Single Source of Truth: MASTER_TIMETABLE_SESSIONS
- * Do NOT maintain separate datasets for Faculty vs Class.
- */
+export function subscribeState(callback) {
+  stateSubscribers.add(callback);
+  return () => stateSubscribers.delete(callback);
+}
+
+function notifyVersionSubscribers() {
+  versionSubscribers.forEach((cb) => {
+    try {
+      cb(activeTimetableVersion);
+    } catch (err) {
+      console.error('Error notifying timetable version subscriber:', err);
+    }
+  });
+}
+
+function notifyStateSubscribers() {
+  stateSubscribers.forEach((cb) => {
+    try {
+      cb();
+    } catch (err) {
+      console.error('Error notifying state subscriber:', err);
+    }
+  });
+}
+
+// ============================================================
+// 6. CENTRALIZED SELECTORS (OVER SINGLE MASTER_TIMETABLE_SESSIONS)
+// ============================================================
 
 /**
  * Filter Master Timetable by Faculty perspective
  */
-export function getFacultyTimetable(facultyId = 'CSE-FAC-042', options = {}) {
+export function getFacultyTimetable(facultyId, options = {}) {
+  if (!facultyId || currentMasterTimetableSessions.length === 0) {
+    return [];
+  }
   const { day, academicYear, semester } = options;
-  return MASTER_TIMETABLE_SESSIONS.filter((session) => {
+  return currentMasterTimetableSessions.filter((session) => {
     const matchesFaculty =
       session.facultyId === facultyId ||
       session.faculty?.includes(facultyId) ||
@@ -878,28 +355,39 @@ export function getFacultyTimetable(facultyId = 'CSE-FAC-042', options = {}) {
  * Filter Master Timetable by Class/Section perspective
  */
 export function getClassTimetable(context = {}, options = {}) {
-  const department = context.department || 'CSE';
-  const section = context.section || context.classSection || 'CSE-C';
+  if (currentMasterTimetableSessions.length === 0) {
+    return [];
+  }
+  const department = context.department || null;
+  const section = context.section || context.classSection || null;
   const { day } = options;
 
-  return MASTER_TIMETABLE_SESSIONS.filter((session) => {
-    const matchesSection =
-      session.section === section || session.classSection === section;
-    const matchesDept = !session.department || session.department === department;
-    if (!matchesSection || !matchesDept) return false;
-    if (day && day !== 'all' && session.day !== day) return false;
+  if (!section && !department) {
+    return [];
+  }
+
+  return currentMasterTimetableSessions.filter((session) => {
+    if (section && session.section !== section && session.classSection !== section) {
+      return false;
+    }
+    if (department && session.department && session.department !== department) {
+      return false;
+    }
+    if (day && day !== 'all' && session.day !== day) {
+      return false;
+    }
     return true;
   });
 }
 
 /**
  * Published Class Timetable Selector (Governance Rule)
- * Only exposes timetable sessions if version is APPROVED or PUBLISHED.
+ * Strictly hides sessions until state is APPROVED or PUBLISHED.
  */
 export function getPublishedClassTimetable(context = {}, options = {}) {
   const version = getTimetableVersion(context);
   const isApprovedOrPublished =
-    version.status === 'APPROVED' || version.status === 'PUBLISHED';
+    version.status === TIMETABLE_STATUSES.APPROVED || version.status === TIMETABLE_STATUSES.PUBLISHED;
   return {
     isApproved: isApprovedOrPublished,
     status: version.status,
@@ -908,50 +396,139 @@ export function getPublishedClassTimetable(context = {}, options = {}) {
   };
 }
 
-/**
- * Backward compatibility helpers delegating directly to unified selectors
- */
-export function getFacultySessions(facultyId = 'CSE-FAC-042') {
+export function getFacultySessions(facultyId) {
   return getFacultyTimetable(facultyId);
 }
 
-export function getFacultySessionsByDay(day = 'WED', facultyId = 'CSE-FAC-042') {
+export function getFacultySessionsByDay(day = 'WED', facultyId) {
   return getFacultyTimetable(facultyId, { day });
 }
 
-export function getClassSessionsByDay(day = 'WED', classSection = 'CSE-C') {
+export function getClassSessionsByDay(day = 'WED', classSection) {
   return getClassTimetable({ section: classSection }, { day });
 }
+
+export function getFacultyWorkload(facultyId) {
+  const sessions = getFacultyTimetable(facultyId);
+  const theory = sessions.filter((s) => s.sessionType === 'THEORY' || s.sessionType === 'ELECTIVE').length;
+  const lab = sessions.filter((s) => s.sessionType === 'LAB').reduce((acc, curr) => acc + (curr.spanCount || 1), 0);
+  const other = sessions.filter((s) => s.sessionType === 'OTHER').length;
+  const total = theory + lab + other;
+  const maxThreshold = currentFacultyProfile?.maxWorkloadThreshold || 16;
+
+  return {
+    total,
+    theory,
+    lab,
+    other,
+    maxThreshold,
+    utilizationPercentage: maxThreshold > 0 ? Math.round((total / maxThreshold) * 100) : 0,
+  };
+}
+
+export function getTodaySchedule(facultyId, targetDay = 'WED') {
+  const sessionsForDay = getFacultySessionsByDay(targetDay, facultyId);
+  const heroClass = sessionsForDay.find((s) => s.isHeroNext) || sessionsForDay[0] || null;
+
+  const scheduleSlots = [];
+  PERIOD_TIMINGS.forEach((pt) => {
+    if (pt.type === 'break') {
+      scheduleSlots.push({
+        isBreak: true,
+        title: `${pt.name} (${pt.duration})`,
+        time: `${pt.startTime} AM`,
+      });
+    } else if (pt.type === 'lunch') {
+      scheduleSlots.push({
+        isLunch: true,
+        title: `${pt.name} (${pt.duration})`,
+        time: `${pt.startTime} PM`,
+      });
+    } else {
+      const match = sessionsForDay.find((s) => s.period === pt.period);
+      if (match) {
+        scheduleSlots.push({
+          period: pt.period,
+          time: `${match.startTime} ${match.startTime.startsWith('09') || match.startTime.startsWith('10') || match.startTime.startsWith('11') ? 'AM' : 'PM'}`,
+          title: match.courseName,
+          badge: match.isHeroNext ? 'Upcoming' : 'Scheduled',
+          subtitle: `${match.period} • ${match.classSection || match.section} (${match.room})`,
+          courseCode: match.courseCode,
+          isUpcoming: match.isHeroNext,
+          startsIn: match.startsIn || 'Now',
+        });
+      } else {
+        scheduleSlots.push({
+          period: pt.period,
+          time: `${pt.startTime} ${pt.startTime.startsWith('09') || pt.startTime.startsWith('10') || pt.startTime.startsWith('11') ? 'AM' : 'PM'}`,
+          title: 'No Teaching Session',
+          badge: 'FREE',
+          subtitle: 'Unassigned Period',
+          isFree: true,
+        });
+      }
+    }
+  });
+
+  return {
+    day: targetDay,
+    dayFull: WEEK_DAYS.find((d) => d.id === targetDay)?.full || targetDay,
+    dateLabel: 'Today Schedule',
+    heroClass,
+    sessions: scheduleSlots,
+  };
+}
+
+// ============================================================
+// 7. ALLOCATION VALIDATION & TIMETABLE GENERATION ENGINES
+// ============================================================
 
 /**
  * Validates faculty allocations prior to generating the timetable.
  * Returns diagnostic issues if invalid, or calculated metrics if valid.
  */
-export function validateFacultyAllocations(allocations = INITIAL_FACULTY_ALLOCATIONS) {
+export function validateFacultyAllocations(allocations = currentFacultyAllocations, courses = currentCurriculumCourses) {
   const errors = [];
-  CURRICULUM_COURSES.forEach((course) => {
+
+  if (!courses || courses.length === 0) {
+    return {
+      valid: false,
+      errors: ['No curriculum data available. Please provide courses.'],
+      totalRequiredPeriods: 0,
+      scheduledPeriods: 0,
+      freePeriods: 0,
+      hardConflicts: 0,
+    };
+  }
+
+  let totalRequiredPeriods = 0;
+
+  courses.forEach((course) => {
+    totalRequiredPeriods += course.periodsPerWeek || 0;
     const alloc = allocations[course.code];
-    const config = COURSE_ALLOCATION_CONFIG[course.code];
+    const rule = course.allocationRule || course.category;
+
     if (!alloc) {
-      errors.push(`Missing faculty allocation for ${course.code} (${course.name})`);
+      errors.push(`Missing faculty allocation for ${course.code} (${course.name || course.shortName || 'Course'})`);
       return;
     }
-    if (config?.courseType === 'THEORY') {
+
+    if (rule === 'SINGLE_FACULTY' || course.category === 'THEORY' || course.category === 'ELECTIVE') {
       if (!alloc.faculty) {
         errors.push(`Theory course ${course.code} must have exactly one faculty assigned.`);
       }
-    } else if (config?.courseType === 'LAB') {
+    } else if (rule === 'PRIMARY_PLUS_ADDITIONAL' || course.category === 'LAB') {
       if (!alloc.primaryFaculty) {
         errors.push(`Laboratory course ${course.code} missing primary theory-linked faculty.`);
       }
       if (!alloc.additionalFaculty || alloc.additionalFaculty.length === 0) {
         errors.push(`Laboratory course ${course.code} requires at least one additional staff member.`);
       }
-    } else if (config?.courseType === 'SAS') {
+    } else if (rule === 'MINIMUM_TWO' || course.category === 'SAS') {
       if (!alloc.faculty || alloc.faculty.length < 2) {
         errors.push(`Soft/Analytical Skills course ${course.code} requires a minimum of two faculty handlers.`);
       }
-    } else if (config?.courseType === 'OTHER') {
+    } else if (rule === 'STAFFS_HANDLED' || course.category === 'OTHER') {
       const required = alloc.staffCount || 1;
       const count = (alloc.faculty || []).filter(Boolean).length;
       if (count < required) {
@@ -963,576 +540,227 @@ export function validateFacultyAllocations(allocations = INITIAL_FACULTY_ALLOCAT
   return {
     valid: errors.length === 0,
     errors,
-    totalRequiredPeriods: 35,
-    scheduledPeriods: errors.length === 0 ? 35 : 0,
+    totalRequiredPeriods,
+    scheduledPeriods: errors.length === 0 ? totalRequiredPeriods : 0,
     freePeriods: 0,
     hardConflicts: 0,
   };
 }
 
-export function getFacultyWorkload(facultyId = 'CSE-FAC-042') {
-  const sessions = getFacultySessions(facultyId);
-  const theory = sessions.filter((s) => s.sessionType === 'THEORY' || s.sessionType === 'ELECTIVE').length;
-  const lab = sessions.filter((s) => s.sessionType === 'LAB').reduce((acc, curr) => acc + (curr.spanCount || 1), 0);
-  const other = sessions.filter((s) => s.sessionType === 'OTHER').length;
-  const total = theory + lab + other;
+/**
+ * Timetable Generation Engine
+ * Consumes current academic context, curriculum courses, and faculty allocations.
+ * Generates conflict-free timetable sessions.
+ */
+export function generateTimetableSessions({
+  academicContext = currentAcademicContext,
+  courses = currentCurriculumCourses,
+  allocations = currentFacultyAllocations,
+} = {}) {
+  // Guard 1: Context check
+  if (!academicContext?.department || !academicContext?.section) {
+    return {
+      success: false,
+      errors: ['Cannot generate timetable: Academic Context (Department, Year, Semester, Section) is missing.'],
+    };
+  }
 
-  return {
-    total,
-    theory,
-    lab,
-    other,
-    maxThreshold: FACULTY_PROFILE.maxWorkloadThreshold,
-    utilizationPercentage: Math.round((total / FACULTY_PROFILE.maxWorkloadThreshold) * 100),
-  };
-}
+  // Guard 2: Curriculum check
+  if (!courses || courses.length === 0) {
+    return {
+      success: false,
+      errors: ['Cannot generate timetable: No curriculum courses provided.'],
+    };
+  }
 
-export function getTodaySchedule(facultyId = 'CSE-FAC-042') {
-  // Current active demo day is Wednesday (Wed, 23 Oct)
-  const wedSessions = getFacultySessionsByDay('WED', facultyId);
-  const heroClass = wedSessions.find((s) => s.isHeroNext) || wedSessions[0];
+  // Guard 3: Allocations validation
+  const validation = validateFacultyAllocations(allocations, courses);
+  if (!validation.valid) {
+    return {
+      success: false,
+      errors: validation.errors,
+    };
+  }
 
-  // Dynamically map PERIOD_TIMINGS to schedule items
-  const sessions = [];
-  PERIOD_TIMINGS.forEach((pt) => {
-    if (pt.type === 'break') {
-      sessions.push({
-        isBreak: true,
-        title: `${pt.name} (${pt.duration})`,
-        time: `${pt.startTime} AM`,
+  // Constraint Scheduling Algorithm:
+  // Build 35 periods across Monday-Friday for the target section
+  const section = academicContext.section;
+  const department = academicContext.department;
+  const year = academicContext.year || 'III Year';
+  const semester = academicContext.semester || 'Semester V';
+  const academicYear = academicContext.academicYear || '2024-25';
+
+  const newSessions = [];
+  const standardPeriods = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
+
+  // Separate labs from theory/other
+  const labCourses = courses.filter((c) => c.category === 'LAB' || c.allocationRule === 'PRIMARY_PLUS_ADDITIONAL');
+  const otherCourses = courses.filter((c) => c.category !== 'LAB' && c.allocationRule !== 'PRIMARY_PLUS_ADDITIONAL');
+
+  // Place Labs in continuous 4-period morning blocks (P1-P4)
+  // Lab 1 on TUE P1-P4, Lab 2 on THU P1-P4 (if 2 labs exist)
+  const labDays = ['TUE', 'THU', 'WED', 'MON', 'FRI'];
+  labCourses.forEach((lab, idx) => {
+    const day = labDays[idx] || 'TUE';
+    const alloc = allocations[lab.code] || {};
+    const facultyName = alloc.additionalFaculty
+      ? `${alloc.primaryFaculty} & ${alloc.additionalFaculty.join(', ')}`
+      : alloc.primaryFaculty || 'Lab Faculty';
+
+    newSessions.push({
+      id: `${day}-P1-P4-LAB`,
+      day,
+      dayFull: WEEK_DAYS.find((d) => d.id === day)?.full || day,
+      period: 'P1-P4',
+      isSpan: true,
+      spanCount: 4,
+      startTime: '09:15',
+      endTime: '12:50',
+      courseCode: lab.code,
+      courseName: lab.name || lab.shortName,
+      section,
+      classSection: section,
+      department,
+      year,
+      semester,
+      academicYear,
+      room: lab.requiredRooms?.[0] || `${department} Lab ${idx + 1}`,
+      roomType: 'Dedicated Laboratory',
+      sessionType: 'LAB',
+      faculty: facultyName,
+      facultyName,
+      facultyId: `FAC-${lab.code}`,
+      icon: 'terminal',
+    });
+  });
+
+  // Expand remaining courses into a pool of periods to schedule
+  const slotPool = [];
+  otherCourses.forEach((c) => {
+    const alloc = allocations[c.code] || {};
+    let facName = 'Faculty Instructor';
+    if (typeof alloc.faculty === 'string') {
+      facName = alloc.faculty;
+    } else if (Array.isArray(alloc.faculty)) {
+      facName = alloc.faculty.filter(Boolean).join(' & ');
+    }
+    const count = c.periodsPerWeek || 3;
+    for (let i = 0; i < count; i++) {
+      slotPool.push({
+        courseCode: c.code,
+        courseName: c.name || c.shortName,
+        sessionType: c.category || 'THEORY',
+        faculty: facName,
+        facultyName: facName,
+        facultyId: `FAC-${c.code}`,
+        room: c.requiredRooms?.[0] || `${department}-204`,
+        roomType: 'Smart Classroom',
+        icon: c.category === 'ELECTIVE' ? 'draw' : 'menu-book',
       });
-    } else if (pt.type === 'lunch') {
-      sessions.push({
-        isLunch: true,
-        title: `${pt.name} (${pt.duration})`,
-        time: `${pt.startTime} PM`,
-      });
-    } else {
-      const match = wedSessions.find((s) => s.period === pt.period);
-      if (match) {
-        sessions.push({
-          period: pt.period,
-          time: `${match.startTime} ${match.startTime.startsWith('09') || match.startTime.startsWith('10') || match.startTime.startsWith('11') ? 'AM' : 'PM'}`,
-          title: match.courseName,
-          badge: match.isHeroNext ? 'Upcoming' : (match.period === 'P2' ? 'Done' : 'Scheduled'),
-          subtitle: `${match.period} • ${match.classSection} (${match.room})`,
-          courseCode: match.courseCode,
-          isDone: match.period === 'P2',
-          isUpcoming: match.isHeroNext,
-          startsIn: match.startsIn || '45m',
-        });
-      } else {
-        sessions.push({
-          period: pt.period,
-          time: `${pt.startTime} ${pt.startTime.startsWith('09') || pt.startTime.startsWith('10') || pt.startTime.startsWith('11') ? 'AM' : 'PM'}`,
-          title: 'No Teaching Session',
-          badge: 'FREE',
-          subtitle: 'Unassigned Period • Faculty Desk',
-          isFree: true,
-        });
-      }
     }
   });
 
+  // Fill remaining periods across MON-FRI
+  WEEK_DAYS.forEach((w) => {
+    standardPeriods.forEach((p) => {
+      // If day has a continuous 4-period lab, skip P1-P4
+      const hasLab = newSessions.some((s) => s.day === w.id && s.isSpan && (p === 'P1' || p === 'P2' || p === 'P3' || p === 'P4'));
+      if (hasLab) return;
+
+      if (slotPool.length > 0) {
+        const item = slotPool.shift();
+        const pt = PERIOD_TIMINGS.find((t) => t.period === p) || { startTime: '09:15', endTime: '10:05' };
+        newSessions.push({
+          id: `${w.id}-${p}`,
+          day: w.id,
+          dayFull: w.full,
+          period: p,
+          isSpan: false,
+          spanCount: 1,
+          startTime: pt.startTime,
+          endTime: pt.endTime,
+          courseCode: item.courseCode,
+          courseName: item.courseName,
+          section,
+          classSection: section,
+          department,
+          year,
+          semester,
+          academicYear,
+          room: item.room,
+          roomType: item.roomType,
+          sessionType: item.sessionType,
+          faculty: item.faculty,
+          facultyName: item.facultyName,
+          facultyId: item.facultyId,
+          icon: item.icon,
+        });
+      }
+    });
+  });
+
+  // Store in MASTER_TIMETABLE_SESSIONS
+  setMasterTimetableSessions(newSessions);
+
+  // Update Timetable Version State
+  activeTimetableVersion = {
+    id: `VER-${academicYear}-${department}-${section}`,
+    academicYear,
+    department,
+    year,
+    semester,
+    section,
+    status: TIMETABLE_STATUSES.PENDING_HOD_APPROVAL,
+    versionLabel: 'v1.0',
+    generatedAt: new Date().toISOString(),
+    approvedAt: null,
+    approvedBy: null,
+    hodReviewer: null,
+    rejectionReason: null,
+    totalRequiredPeriods: validation.totalRequiredPeriods,
+    totalScheduledPeriods: newSessions.reduce((acc, s) => acc + (s.spanCount || 1), 0),
+    freePeriods: 0,
+    hardConflicts: 0,
+  };
+
+  notifyVersionSubscribers();
+
   return {
-    day: 'WED',
-    dayFull: 'Wednesday',
-    dateLabel: 'Wednesday, 23 Oct',
-    heroClass,
-    sessions,
+    success: true,
+    sessions: newSessions,
+    version: activeTimetableVersion,
   };
 }
 
 /**
- * Business Rule: AC vs HOD Assignment Authority Model
- * Current prototype assigns via ACADEMIC_COORDINATOR.
- * Future institutional architecture: assignmentAuthorityRole = 'HOD'.
+ * On-demand Institutional Data Loader
+ * Allows a user, testing script, or external API to load actual datasets
+ * without hardcoding them into the static codebase.
  */
-export const assignmentAuthorityRole = 'ACADEMIC_COORDINATOR';
+export function loadInstitutionalData({
+  academicContext,
+  courses,
+  facultyHandlers,
+  allocations,
+  facultyList,
+  facultyProfile,
+  coordinatorProfile,
+  notifications,
+} = {}) {
+  if (academicContext) setAcademicContext(academicContext);
+  if (courses) setCurriculumCourses(courses);
+  if (facultyHandlers) setCourseFacultyHandlers(facultyHandlers);
+  if (allocations) {
+    currentFacultyAllocations = { ...allocations };
+    INITIAL_FACULTY_ALLOCATIONS = currentFacultyAllocations;
+  }
+  if (facultyList) {
+    AC_FACULTY_LIST = [...facultyList];
+  }
+  if (facultyProfile) setFacultyProfile(facultyProfile);
+  if (coordinatorProfile) setCoordinatorProfile(coordinatorProfile);
+  if (notifications) setNotifications(notifications);
 
-/**
- * 1. CurriculumCourse: Official Curriculum (Locked & Loaded from R2022 Regulations)
- * 12 Courses, 35 Periods Total
- */
-export const CURRICULUM_COURSES = [
-  // THEORY (3 Courses • 10 Periods)
-  {
-    code: '22CSC14',
-    name: 'Principles of Compiler Design',
-    shortName: 'Compiler Design',
-    category: 'THEORY',
-    categoryLabel: 'Core Theory',
-    periodsPerWeek: 4,
-    credits: 4,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    requiredRooms: ['CSE-204'],
-  },
-  {
-    code: '22CSC15',
-    name: 'Full Stack Development',
-    shortName: 'Full Stack Dev',
-    category: 'THEORY',
-    categoryLabel: 'Core Theory',
-    periodsPerWeek: 3,
-    credits: 3,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    requiredRooms: ['CSE-204'],
-  },
-  {
-    code: '22CSC16',
-    name: 'Object Oriented Software Engineering',
-    shortName: 'OOSE',
-    category: 'THEORY',
-    categoryLabel: 'Core Theory',
-    periodsPerWeek: 3,
-    credits: 3,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    requiredRooms: ['CSE-204'],
-  },
-
-  // LABORATORY / PRACTICAL (2 Labs • 8 Continuous Periods)
-  {
-    code: '22CSP09',
-    name: 'Full Stack Development Laboratory',
-    shortName: 'FSD Lab',
-    category: 'LAB',
-    categoryLabel: 'Dedicated Laboratory',
-    periodsPerWeek: 4,
-    isSpan: true,
-    spanCount: 4,
-    credits: 2,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    room: 'CSE Lab 2',
-    isDualFaculty: true,
-  },
-  {
-    code: '22CSP10',
-    name: 'Object Oriented Software Engineering Laboratory',
-    shortName: 'OOSE Lab',
-    category: 'LAB',
-    categoryLabel: 'Dedicated Laboratory',
-    periodsPerWeek: 4,
-    isSpan: true,
-    spanCount: 4,
-    credits: 2,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    room: 'CSE Lab 2',
-    isDualFaculty: true,
-  },
-
-  // ELECTIVE (3 Courses • 9 Periods)
-  {
-    code: '22CSX01',
-    name: 'Deep Learning',
-    shortName: 'Deep Learning',
-    category: 'ELECTIVE',
-    categoryLabel: 'PE-I',
-    periodsPerWeek: 3,
-    credits: 3,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-  },
-  {
-    code: '22CSX21',
-    name: 'Cryptography and Network Security',
-    shortName: 'Crypto & NetSec',
-    category: 'ELECTIVE',
-    categoryLabel: 'PE-II',
-    periodsPerWeek: 3,
-    credits: 3,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-  },
-  {
-    code: '22CSX42',
-    name: 'UI and UX Design',
-    shortName: 'UI/UX Design',
-    category: 'ELECTIVE',
-    categoryLabel: 'PE-III',
-    periodsPerWeek: 3,
-    credits: 3,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-  },
-
-  // OTHER COURSE / APPLIED (4 Courses • 8 Periods)
-  {
-    code: '22MAN08R',
-    name: 'Soft/Analytical Skills – IV',
-    shortName: 'Soft Skills',
-    category: 'OTHER',
-    categoryLabel: 'Career Guidance Cell',
-    periodsPerWeek: 2,
-    credits: 1,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    isDualFaculty: true,
-  },
-  {
-    code: 'SD',
-    name: 'Skill Development',
-    shortName: 'Skill Dev',
-    category: 'OTHER',
-    categoryLabel: 'Industry Value Added Session',
-    periodsPerWeek: 2,
-    credits: 1,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-  },
-  {
-    code: 'NPTEL',
-    name: 'NPTEL Certification Mentoring',
-    shortName: 'NPTEL Mentoring',
-    category: 'OTHER',
-    categoryLabel: 'Self-Paced Portal Audit & Seminar',
-    periodsPerWeek: 2,
-    credits: 1,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-  },
-  {
-    code: 'PBL',
-    name: 'Project Based Learning',
-    shortName: 'PBL Capstone',
-    category: 'OTHER',
-    categoryLabel: 'Capstone Phase 1 Research',
-    periodsPerWeek: 2,
-    credits: 1,
-    regulation: 'R2022 AUTO',
-    term: 'Sem V',
-    department: 'CSE',
-    isDualFaculty: true,
-  },
-];
-
-/**
- * 2. Authoritative Course -> Faculty Handlers Mapping (Course-Level, strictly authoritative)
- */
-export const COURSE_FACULTY_HANDLERS = {
-  // THEORY SUBJECTS
-  '22CSC14': [
-    'Dr A. Manchula',
-    'Ms K. Shanmugapriya',
-  ],
-  '22CSC15': [
-    'Ms D. Vinoparkavi',
-    'Mr R. Manikandan',
-  ],
-  '22CSC16': [
-    'Dr S. Karuppusamy',
-    'Ms N.M. Indumathi',
-    'Ms N. Bhuvaneswari',
-  ],
-  '22CSX01': [
-    'Ms B. Deepa',
-    'Dr T. Rajasekaran',
-    'Ms S. Geetha',
-    'Ms V. Mythily',
-  ],
-  '22CSX21': [
-    'Ms K.E. Eswari',
-    'Mr D. Kavin Kumar',
-    'Mr K.U. Ranjith',
-  ],
-  '22CSX42': [
-    'Ms E. Padma',
-    'Ms P. Devika',
-    'Ms C. Navamani',
-    'Ms P. Savitha',
-  ],
-
-  // LAB SUBJECTS
-  '22CSP09': [
-    'Ms D. Vinoparkavi',
-    'Dr T. Rajasekaran',
-    'Ms M. Sowmiya',
-    'Mr D. Kavin Kumar',
-    'Mr R. Manikandan',
-    'Ms K. Shanmugapriya',
-  ],
-  '22CSP10': [
-    'Dr S. Karuppusamy',
-    'Dr A. Manchula',
-    'Ms N.M. Indumathi',
-    'Ms N. Bhuvaneswari',
-    'Ms V. Mythily',
-  ],
-
-  // OTHER SUBJECTS
-  '22MAN08R': [
-    'Mr R. Shankar',
-    'Dr P. Kavitha',
-    'Dr P. Dhivyapriya',
-    'Ms M. Priyadharsini',
-    'Ms K. Abirami',
-  ],
-  'SD': [
-    'Ms B. Deepa',
-    'Ms S. Geetha',
-    'Mr D. Kavin Kumar',
-  ],
-  'NPTEL': [
-    'Ms M. Sowmiya',
-    'Ms N. Bhuvaneshwari',
-    'Ms N. Bhuvanehwari',
-    'Mr D. Manikandan',
-  ],
-  'PBL': [
-    'Ms K.E. Eswari',
-    'Ms C. Navamani',
-    'Ms B. Preethi',
-    'Dr M.P. Thiruvenkatasuresh',
-    'Ms N. Bhuvaneswari',
-    'Ms D. Vinoparkavi',
-    'Ms S. Geetha',
-    'Ms V. Mythily',
-    'Ms E. Padma',
-    'Ms P. Savitha',
-  ],
-};
-
-/**
- * Course Allocation Configuration (Course types, rules, and linkages)
- */
-export const COURSE_ALLOCATION_CONFIG = {
-  '22CSC14': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'Principles of Compiler Design' },
-  '22CSC15': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'Full Stack Development' },
-  '22CSC16': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'OO Software Engineering' },
-  '22CSX01': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'Deep Learning' },
-  '22CSX21': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'Fundamentals of Cryptography and Network Security' },
-  '22CSX42': { courseType: 'THEORY', allocationRule: 'SINGLE_FACULTY', name: 'UI and UX Design' },
-  '22CSP09': { courseType: 'LAB', allocationRule: 'PRIMARY_PLUS_ADDITIONAL', name: 'FSD Lab', linkedTheoryCourse: '22CSC15' },
-  '22CSP10': { courseType: 'LAB', allocationRule: 'PRIMARY_PLUS_ADDITIONAL', name: 'OOSE Lab', linkedTheoryCourse: '22CSC16' },
-  '22MAN08R': { courseType: 'SAS', allocationRule: 'MINIMUM_TWO', name: 'Soft/Analytical Skills-IV' },
-  'SD': { courseType: 'OTHER', allocationRule: 'STAFFS_HANDLED', name: 'Skill Development' },
-  'NPTEL': { courseType: 'OTHER', allocationRule: 'STAFFS_HANDLED', name: 'NPTEL' },
-  'PBL': { courseType: 'OTHER', allocationRule: 'STAFFS_HANDLED', name: 'Project Based Learning' },
-};
-
-/**
- * Initial dynamic allocation state adhering strictly to allocation rules
- */
-export const INITIAL_FACULTY_ALLOCATIONS = {
-  // THEORY: Exactly one faculty
-  '22CSC14': { faculty: 'Ms K. Shanmugapriya' },
-  '22CSC15': { faculty: 'Mr R. Manikandan' },
-  '22CSC16': { faculty: 'Ms N.M. Indumathi' },
-  '22CSX01': { faculty: 'Ms S. Geetha' },
-  '22CSX21': { faculty: 'Ms K.E. Eswari' },
-  '22CSX42': { faculty: 'Ms C. Navamani' },
-
-  // LAB: Primary linked to theory + Additional Staff
-  '22CSP09': {
-    primaryFaculty: 'Mr R. Manikandan',
-    additionalFaculty: ['Ms K. Shanmugapriya'],
-  },
-  '22CSP10': {
-    primaryFaculty: 'Ms N.M. Indumathi',
-    additionalFaculty: ['Ms N. Bhuvaneswari'],
-  },
-
-  // SAS: Minimum two faculty
-  '22MAN08R': {
-    faculty: ['Dr P. Dhivyapriya', 'Ms M. Priyadharsini'],
-  },
-
-  // OTHER: Staff's Handled mode
-  'SD': {
-    staffCount: 1,
-    faculty: ['Ms S. Geetha'],
-  },
-  'NPTEL': {
-    staffCount: 1,
-    faculty: ['Ms N. Bhuvaneshwari'],
-  },
-  'PBL': {
-    staffCount: 2,
-    faculty: ['Ms S. Geetha', 'Ms V. Mythily'],
-  },
-};
-
-/**
- * Backward-compatible FACULTY_ELIGIBILITY object mapped directly from COURSE_FACULTY_HANDLERS
- */
-export const FACULTY_ELIGIBILITY = Object.keys(COURSE_FACULTY_HANDLERS).reduce((acc, code) => {
-  acc[code] = COURSE_FACULTY_HANDLERS[code].map((name, i) => ({
-    facultyId: `FAC-${code}-${i + 1}`,
-    name,
-    designation: 'Faculty Handler',
-    currentPeriods: 8,
-  }));
-  return acc;
-}, {});
-
-/**
- * 3. FacultyAssignment: Official mapping state of Course -> Faculty
- */
-export const INITIAL_FACULTY_ASSIGNMENTS = [
-  { courseCode: '22CSC14', section: 'CSE-C', assignedFacultyId: 'FAC-22CSC14-2', assignedFacultyName: 'Ms K. Shanmugapriya', status: 'Assigned' },
-  { courseCode: '22CSC15', section: 'CSE-C', assignedFacultyId: 'FAC-22CSC15-2', assignedFacultyName: 'Mr R. Manikandan', status: 'Assigned' },
-  { courseCode: '22CSC16', section: 'CSE-C', assignedFacultyId: 'FAC-22CSC16-2', assignedFacultyName: 'Ms N.M. Indumathi', status: 'Assigned' },
-  { courseCode: '22CSP09', section: 'CSE-C', assignedFacultyId: 'FAC-22CSP09-1+5', assignedFacultyName: 'Mr R. Manikandan & Ms K. Shanmugapriya', isDual: true, status: 'Assigned' },
-  { courseCode: '22CSP10', section: 'CSE-C', assignedFacultyId: 'FAC-22CSP10-3+4', assignedFacultyName: 'Ms N.M. Indumathi & Ms N. Bhuvaneswari', isDual: true, status: 'Assigned' },
-  { courseCode: '22CSX01', section: 'CSE-C', assignedFacultyId: 'FAC-22CSX01-3', assignedFacultyName: 'Ms S. Geetha', status: 'Assigned' },
-  { courseCode: '22CSX21', section: 'CSE-C', assignedFacultyId: 'FAC-22CSX21-1', assignedFacultyName: 'Ms K.E. Eswari', status: 'Assigned' },
-  { courseCode: '22CSX42', section: 'CSE-C', assignedFacultyId: 'FAC-22CSX42-3', assignedFacultyName: 'Ms C. Navamani', status: 'Assigned' },
-  { courseCode: '22MAN08R', section: 'CSE-C', assignedFacultyId: 'FAC-22MAN08R-3+4', assignedFacultyName: 'Dr P. Dhivyapriya & Ms M. Priyadharsini', isDual: true, status: 'Assigned' },
-  { courseCode: 'SD', section: 'CSE-C', assignedFacultyId: 'FAC-SD-2', assignedFacultyName: 'Ms S. Geetha', status: 'Assigned' },
-  { courseCode: 'NPTEL', section: 'CSE-C', assignedFacultyId: 'FAC-NPTEL-2', assignedFacultyName: 'Ms N. Bhuvaneshwari', status: 'Assigned' },
-  { courseCode: 'PBL', section: 'CSE-C', assignedFacultyId: 'FAC-PBL-7+8', assignedFacultyName: 'Ms S. Geetha & Ms V. Mythily', isDual: true, status: 'Assigned' },
-];
-
-/**
- * 4. Academic Coordinator (AC) specific models and helpers
- */
-export const AC_PROFILE = {
-  id: 'CSE-FAC-001',
-  name: 'Mr. R. Manikandan',
-  initials: 'RM',
-  designation: 'Assistant Professor (Sl.Gr.) & Academic Coordinator',
-  department: 'Dept. of Computer Science & Engg.',
-  shortDept: 'CSE',
-  email: 'ac.cse@nandhaengg.org',
-  academicYear: 'AY 2024-25 Odd',
-  semester: 'Semester V (III Year CSE)',
-  regulation: 'Autonomous Regulation R2022',
-  status: 'Live Coordinator Console',
-  role: 'Academic Coordinator & Timetable Chair',
-  cabin: 'CSE Block 1st Floor, AC Desk #102',
-  phone: 'ext 241 / +91 98421 00241',
-  assignedSections: ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'],
-  activeClass: 'CSE-C',
-  totalTeachingStaff: 18,
-  totalWeeklyPeriods: 35,
-  conflictCount: 0,
-};
-
-export const AC_FACULTY_LIST = [
-  {
-    id: 'CSE-FAC-001',
-    name: 'Mr. R. Manikandan (AC)',
-    designation: 'Asst. Professor (Sl.Gr.)',
-    assignedPeriods: 14,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSC15 Full Stack Dev', '22CSP09 FSD Lab'],
-  },
-  {
-    id: 'CSE-FAC-042',
-    name: 'Ms. C. Navamani',
-    designation: 'Asst. Professor',
-    assignedPeriods: 6,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSX42 UI/UX Design (Sec B & C)'],
-  },
-  {
-    id: 'CSE-FAC-018',
-    name: 'Ms. K. Shanmugapriya',
-    designation: 'Asst. Professor',
-    assignedPeriods: 12,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSC14 Compiler Design', '22CSP09 FSD Lab'],
-  },
-  {
-    id: 'CSE-FAC-024',
-    name: 'Ms. N. Indumathi',
-    designation: 'Asst. Professor',
-    assignedPeriods: 14,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSC16 OOSE', '22CSP08 Mobile App Lab'],
-  },
-  {
-    id: 'CSE-FAC-031',
-    name: 'Ms. S. Geetha',
-    designation: 'Asst. Professor',
-    assignedPeriods: 10,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSX01 Deep Learning (PE-I)'],
-  },
-  {
-    id: 'CSE-FAC-029',
-    name: 'Ms. K. E. Eswari',
-    designation: 'Asst. Professor',
-    assignedPeriods: 11,
-    maxThreshold: 16,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22CSX21 Crypto & NetSec (PE-II)'],
-  },
-  {
-    id: 'CSE-FAC-011',
-    name: 'Dr. P. Dhivyapriya',
-    designation: 'Associate Professor',
-    assignedPeriods: 8,
-    maxThreshold: 14,
-    complianceStatus: 'COMPLIANT',
-    courses: ['22MAN08R Soft Skills'],
-  },
-  {
-    id: 'CSE-FAC-004',
-    name: 'Dr. K. S. Arul',
-    designation: 'Professor & Dean',
-    assignedPeriods: 6,
-    maxThreshold: 10,
-    complianceStatus: 'COMPLIANT',
-    courses: ['Library & Remedial Seminar'],
-  },
-];
-
-export const AC_CONFLICT_AUDITS = [
-  {
-    id: 'rule-1',
-    title: 'Zero Faculty Double-Booking',
-    desc: 'Automated cross-check ensures no faculty is assigned to two classrooms concurrently.',
-    status: 'PASSED',
-    passed: true,
-  },
-  {
-    id: 'rule-2',
-    title: 'Smart Classroom & Lab Allocation',
-    desc: 'All 35 periods mapped to available Smart Classrooms (CSE-202, CSE-204) and CSE Lab 2.',
-    status: 'PASSED',
-    passed: true,
-  },
-  {
-    id: 'rule-3',
-    title: 'AICTE / AU Break Compliance',
-    desc: 'Morning Break (10:55 AM), Lunch (12:50 PM), Evening Break (03:25 PM) protected across all batches.',
-    status: 'COMPLIANT',
-    passed: true,
-  },
-  {
-    id: 'rule-4',
-    title: 'Elective Parallel Slot Synchronization',
-    desc: 'PE-I and PE-II elective buckets run concurrently with no inter-student conflicts.',
-    status: 'SYNCHRONIZED',
-    passed: true,
-  },
-  {
-    id: 'rule-5',
-    title: 'Workload Cap Enforcement',
-    desc: 'Zero teaching staff exceeds Anna University faculty workload limits.',
-    status: 'COMPLIANT',
-    passed: true,
-  },
-];
-
+  notifyStateSubscribers();
+  return { success: true };
+}

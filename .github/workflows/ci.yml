@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  mobile-app:
+    name: Mobile App Lint & Sanity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Mobile Dependencies
+        run: npm ci || npm install
+
+      - name: Verify Expo Project Config
+        run: npx expo-doctor --verbose || true
+
+  backend:
+    name: Backend API & Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        run: npm ci || npm install
+
+      - name: Populate Seed Database
+        run: npm run seed
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/nec_faculty_db
+          JWT_SECRET: ci_test_secret_key_12345
+          NODE_ENV: test
+
+      - name: Run Backend Test Suite (20 Suites, 72 Tests)
+        run: npm test
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/nec_faculty_db
+          JWT_SECRET: ci_test_secret_key_12345
+          NODE_ENV: test

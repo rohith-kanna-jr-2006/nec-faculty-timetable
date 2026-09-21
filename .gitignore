@@ -9,6 +9,10 @@ ios/
 
 # Environment and logs
 *.log
-.env*
+.env
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db
+backend/node_modules/
+

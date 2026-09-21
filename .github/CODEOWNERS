@@ -1,0 +1,14 @@
+# Global repository owners
+* @rohith-kanna-jr-2006
+
+# Frontend Mobile Application
+/app/ @rohith-kanna-jr-2006
+/components/ @rohith-kanna-jr-2006
+/constants/ @rohith-kanna-jr-2006
+
+# Backend and Database API
+/backend/ @rohith-kanna-jr-2006
+/services/ @rohith-kanna-jr-2006
+
+# CI/CD Workflows
+/.github/ @rohith-kanna-jr-2006

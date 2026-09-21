@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,27 +25,52 @@ export default function AcademicContextScreen() {
   const currentContext = getAcademicContext();
   const advisors = getClassAdvisors();
 
-  const [selectedDept] = useState('CSE');
-  const [selectedYear, setSelectedYear] = useState(currentContext.year || 'III Year');
-  const [selectedSemester, setSelectedSemester] = useState(currentContext.semester || 'Sem V');
-  const [selectedSection, setSelectedSection] = useState(currentContext.section || 'CSE-C');
+  const [selectedDept, setSelectedDept] = useState(currentContext.department || 'CSE');
+  const [selectedYear, setSelectedYear] = useState(currentContext.year || null);
+  const [selectedSemester, setSelectedSemester] = useState(currentContext.semester || null);
+  const [selectedSection, setSelectedSection] = useState(currentContext.section || null);
 
   const years = ['I Year', 'II Year', 'III Year', 'IV Year'];
-  const semesters = selectedYear === 'III Year' ? ['Sem V', 'Sem VI'] : ['Sem I', 'Sem II'];
-  const sections = [
-    { id: 'CSE-A', label: 'Section A', count: 62, status: 'Ratified' },
-    { id: 'CSE-B', label: 'Section B', count: 65, status: 'Drafting' },
-    { id: 'CSE-C', label: 'Section C', count: 64, status: 'Pending Review' },
-    { id: 'CSE-D', label: 'Section D', count: 63, status: 'Configured' },
-  ];
+  const getSemestersForYear = (yr) => {
+    switch (yr) {
+      case 'I Year': return ['Sem I', 'Sem II'];
+      case 'II Year': return ['Sem III', 'Sem IV'];
+      case 'III Year': return ['Sem V', 'Sem VI'];
+      case 'IV Year': return ['Sem VII', 'Sem VIII'];
+      default: return [];
+    }
+  };
+  const semesters = selectedYear ? getSemestersForYear(selectedYear) : [];
+
+  const baseSectionLetters = ['A', 'B', 'C', 'D'];
+  const sections = baseSectionLetters.map((letter) => {
+    const id = `${selectedDept || 'CSE'}-${letter}`;
+    const advisor = advisors[id];
+    return {
+      id,
+      label: `Section ${letter}`,
+      advisorName: advisor?.facultyName || null,
+      status: advisor ? 'Ratified' : 'Unassigned',
+    };
+  });
+
+  const isContextConfigured = Boolean(selectedYear && selectedSemester && selectedSection);
 
   const handleSaveScope = (nextRoute) => {
+    if (!isContextConfigured) {
+      Alert.alert(
+        'Incomplete Context',
+        'Please select an Academic Year, Semester, and Section to define the target cohort context.'
+      );
+      return;
+    }
+
     setAcademicContext({
       department: selectedDept,
       year: selectedYear,
       semester: selectedSemester,
       section: selectedSection,
-      academicYear: 'AY 2024-25 Odd',
+      academicYear: currentContext.academicYear || 'Academic Year AY-2024-25',
     });
 
     if (nextRoute) {
@@ -56,7 +82,15 @@ export default function AcademicContextScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>
-      <HODHeader title="Academic Context" showBack={true} activeCohort={`${selectedYear} / ${selectedSemester} / ${selectedSection}`} />
+      <HODHeader
+        title="Academic Context"
+        showBack={true}
+        activeCohort={
+          isContextConfigured
+            ? `${selectedYear} / ${selectedSemester} / ${selectedSection}`
+            : 'No Context Selected'
+        }
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -176,7 +210,9 @@ export default function AcademicContextScreen() {
                     </View>
                   </View>
 
-                  <Text style={styles.sectionItemCount}>{sec.count} Enrolled Students</Text>
+                  <Text style={styles.sectionItemCount}>
+                    {sec.advisorName ? 'Advisor Ratified' : 'Advisor Unassigned'}
+                  </Text>
                   <View style={styles.advisorRow}>
                     <MaterialIcons name="school" size={13} color={Colors.onSurfaceVariant} />
                     <Text style={styles.advisorText} numberOfLines={1}>
@@ -196,10 +232,14 @@ export default function AcademicContextScreen() {
             <Text style={styles.summaryHeaderText}>TARGET COHORT CONTEXT</Text>
           </View>
           <Text style={styles.summaryTitle}>
-            CSE • {selectedYear} • {selectedSemester} • {selectedSection}
+            {isContextConfigured
+              ? `${selectedDept || 'CSE'} • ${selectedYear} • ${selectedSemester} • ${selectedSection}`
+              : 'No Academic Context Selected'}
           </Text>
           <Text style={styles.summaryDesc}>
-            Downstream operations (Class Advisor assignment, AC input audit, faculty allocation, and timetable ratification) will execute for this target scope.
+            {isContextConfigured
+              ? 'Downstream operations (Class Advisor assignment, AC input audit, faculty allocation, and timetable ratification) will execute for this target scope.'
+              : 'Select an Academic Year tier, Semester term, and Section cohort above to define the institutional operational scope.'}
           </Text>
 
           <View style={styles.btnRow}>

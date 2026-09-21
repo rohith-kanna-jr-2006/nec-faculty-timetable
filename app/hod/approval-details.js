@@ -19,13 +19,33 @@ import {
   getTimetableVersion,
   subscribeTimetableVersion,
   getHODProfile,
+  getClassAdvisors,
 } from '../../constants/demoData';
+
+function generateDeterministicApprovalHash(metadata) {
+  const seed = JSON.stringify(metadata);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < seed.length; i++) {
+    const ch = seed.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const p1 = (h1 >>> 0).toString(16).padStart(8, '0');
+  const p2 = (h2 >>> 0).toString(16).padStart(8, '0');
+  const p3 = ((h1 ^ h2) >>> 0).toString(16).padStart(8, '0');
+  const p4 = ((h1 + h2) >>> 0).toString(16).padStart(8, '0');
+  return `${p1}${p2}${p3}${p4}${p2}${p1}${p4}${p3}`;
+}
 
 export default function ApprovalDetailsScreen() {
   const router = useRouter();
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
   const hodProfile = getHODProfile();
+  const advisors = getClassAdvisors();
 
   const [timetableVersion, setTimetableVersion] = useState(getTimetableVersion());
 
@@ -35,13 +55,23 @@ export default function ApprovalDetailsScreen() {
   }, []);
 
   const isApproved = timetableVersion.status === 'APPROVED' || timetableVersion.status === 'PUBLISHED';
-  const approvalTimestamp = timetableVersion.approvedAt || new Date().toISOString();
-  const approver = timetableVersion.approvedBy || hodProfile.name;
+  const approvalTimestamp = timetableVersion.approvedAt || null;
+  const approver = timetableVersion.approvedBy || hodProfile?.name || 'Head of Department';
+
+  const approvalHash = isApproved
+    ? generateDeterministicApprovalHash({
+        versionId: timetableVersion.id,
+        status: timetableVersion.status,
+        approvedAt: timetableVersion.approvedAt,
+        approver,
+        cohort: `${context.year}-${context.semester}-${activeSection}`,
+      })
+    : null;
 
   const handlePrintOrder = () => {
     Alert.alert(
       'Official Decree Generated',
-      `Executive Order NEC/CSE/TT/2024-25/08 for ${activeSection} compiled and encrypted. PDF signed with HOD institutional certificate.`,
+      `Executive Order for ${activeSection} compiled and signed with HOD institutional certificate.`,
       [{ text: 'Dismiss' }]
     );
   };
@@ -66,7 +96,9 @@ export default function ApprovalDetailsScreen() {
               <View style={styles.crestRow}>
                 <MaterialIcons name="verified" size={48} color="#10B981" />
                 <View style={styles.decreeHeadInfo}>
-                  <Text style={styles.decreeOrderNumber}>OFFICIAL ORDER • NEC/CSE/TT/08</Text>
+                  <Text style={styles.decreeOrderNumber}>
+                    OFFICIAL ORDER • {timetableVersion.versionLabel || 'RATIFIED'}
+                  </Text>
                   <Text style={styles.decreeTitle}>STATUTORY RATIFICATION DECREE</Text>
                   <Text style={styles.decreeSub}>
                     NANDHA ENGINEERING COLLEGE (AUTONOMOUS)
@@ -82,7 +114,7 @@ export default function ApprovalDetailsScreen() {
                   <Text style={styles.sealPillText}>APPROVED BY HOD</Text>
                 </View>
                 <Text style={styles.orderDateText}>
-                  {approvalTimestamp.split('T')[0]}
+                  {approvalTimestamp ? approvalTimestamp.split('T')[0] : 'Attested'}
                 </Text>
               </View>
             </View>
@@ -99,24 +131,26 @@ export default function ApprovalDetailsScreen() {
 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>ACADEMIC YEAR</Text>
-                  <Text style={styles.infoValue}>2024 - 2025 (Odd Semester)</Text>
+                  <Text style={styles.infoValue}>{context.academicYear || 'Academic Year AY-2024-25'}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>CURRICULUM REGULATION</Text>
-                  <Text style={styles.infoValue}>Autonomous Regulation R2022</Text>
+                  <Text style={styles.infoValue}>{context.regulation || 'Autonomous Regulation R2022'}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>TARGET CLASS / SECTION</Text>
                   <Text style={[styles.infoValue, styles.highlightText]}>
-                    III Year • Semester V • {activeSection} (64 Students)
+                    {context.year || 'Year'} • {context.semester || 'Semester'} • {activeSection}
                   </Text>
                 </View>
 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>SCHEDULE LOAD</Text>
-                  <Text style={styles.infoValue}>35 Periods / Week (100% Scheduled)</Text>
+                  <Text style={styles.infoValue}>
+                    {timetableVersion.totalScheduledPeriods || 0} Periods / Week
+                  </Text>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -139,19 +173,19 @@ export default function ApprovalDetailsScreen() {
                 <Text style={styles.signatoryLabel}>EXECUTIVE SIGNATORY:</Text>
                 <Text style={styles.signatoryName}>{approver}</Text>
                 <Text style={styles.signatoryTitle}>
-                  Professor & Head of Department • Department of CSE
+                  {hodProfile?.role || 'Head of Department'} • Dept. of CSE
                 </Text>
 
                 <View style={styles.hashBox}>
-                  <Text style={styles.hashLabel}>CRYPTOGRAPHIC HASH (SHA-256):</Text>
-                  <Text style={styles.hashText}>
-                    e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-                  </Text>
+                  <Text style={styles.hashLabel}>CRYPTOGRAPHIC HASH (DETERMINISTIC):</Text>
+                  <Text style={styles.hashText}>{approvalHash || 'Pending Ratification'}</Text>
                 </View>
 
-                <Text style={styles.timestampText}>
-                  Attested at: {approvalTimestamp}
-                </Text>
+                {approvalTimestamp && (
+                  <Text style={styles.timestampText}>
+                    Attested at: {approvalTimestamp}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -179,7 +213,9 @@ export default function ApprovalDetailsScreen() {
                 <MaterialIcons name="done-all" size={16} color="#059669" />
                 <View style={styles.distTextCol}>
                   <Text style={styles.distTitle}>Student Notice Board Broadcast</Text>
-                  <Text style={styles.distSub}>Class Advisor Ms. C. Navamani designated</Text>
+                  <Text style={styles.distSub}>
+                    Class Advisor {advisors[activeSection]?.facultyName || 'Section Lead'} designated
+                  </Text>
                 </View>
               </View>
             </View>

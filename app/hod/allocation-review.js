@@ -16,6 +16,8 @@ import PrimaryButton from '../../components/PrimaryButton';
 import {
   getAcademicContext,
   getHODFacultyAllocations,
+  getCurriculumCourses,
+  getCourseFacultyHandlers,
 } from '../../constants/demoData';
 
 export default function AllocationReviewScreen() {
@@ -23,63 +25,22 @@ export default function AllocationReviewScreen() {
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
   const allocations = getHODFacultyAllocations();
+  const courses = getCurriculumCourses();
 
-  const auditRows = [
-    {
-      courseCode: '22CSC14',
-      courseName: 'Compiler Design',
+  const auditRows = courses.map((c) => {
+    const handlers = getCourseFacultyHandlers(c.code) || [];
+    const handlerNames = handlers.map((h) => h.name || h.facultyName).join(', ');
+    const assigned = allocations[c.code];
+    return {
+      courseCode: c.code,
+      courseName: c.name,
       section: activeSection,
-      periods: 4,
-      acInput: 'Ms. C. Navamani, Dr. K. Senthil Kumar',
-      hodAssigned: allocations['22CSC14']?.facultyName || 'Ms. C. Navamani',
-      status: 'Assigned',
-    },
-    {
-      courseCode: '22CSC15',
-      courseName: 'Cloud Computing',
-      section: activeSection,
-      periods: 4,
-      acInput: 'Dr. M. Kavitha, Mr. P. Vignesh',
-      hodAssigned: allocations['22CSC15']?.facultyName || 'Dr. M. Kavitha',
-      status: 'Assigned',
-    },
-    {
-      courseCode: '22CSL07',
-      courseName: 'Compiler Lab',
-      section: activeSection,
-      periods: 4,
-      acInput: 'Ms. C. Navamani, Mrs. S. Deepa',
-      hodAssigned: allocations['22CSL07']?.facultyName || 'Ms. C. Navamani',
-      status: 'Assigned',
-    },
-    {
-      courseCode: '22CSL08',
-      courseName: 'Cloud Systems Lab',
-      section: activeSection,
-      periods: 4,
-      acInput: 'Dr. M. Kavitha, Mr. P. Vignesh',
-      hodAssigned: allocations['22CSL08']?.facultyName || 'Dr. M. Kavitha',
-      status: 'Assigned',
-    },
-    {
-      courseCode: '22CSE03',
-      courseName: 'Cryptography',
-      section: activeSection,
-      periods: 3,
-      acInput: 'Dr. T. Rajesh',
-      hodAssigned: allocations['22CSE03']?.facultyName || 'Dr. T. Rajesh',
-      status: 'Assigned',
-    },
-    {
-      courseCode: '22CSO01',
-      courseName: 'Open Elective I',
-      section: activeSection,
-      periods: 3,
-      acInput: 'Inter-Departmental Pool',
-      hodAssigned: allocations['22CSO01']?.facultyName || 'Pending Allocation',
-      status: allocations['22CSO01'] ? 'Assigned' : 'Needs Review',
-    },
-  ];
+      periods: c.periods || c.periodsPerWeek || 0,
+      acInput: handlerNames || 'No AC recommendation',
+      hodAssigned: assigned?.facultyName || 'Pending Allocation',
+      status: assigned ? 'Assigned' : 'Needs Review',
+    };
+  });
 
   const totalPeriods = auditRows.reduce((sum, r) => sum + r.periods, 0);
   const assignedCount = auditRows.filter((r) => r.status === 'Assigned').length;
@@ -138,66 +99,83 @@ export default function AllocationReviewScreen() {
           <Text style={styles.tableHeader}>COURSE ALLOCATION AUDIT ROSTER</Text>
 
           <View style={styles.tableList}>
-            {auditRows.map((row) => (
-              <View key={row.courseCode} style={styles.rowCard}>
-                <View style={styles.rowTop}>
-                  <View style={styles.rowCodeBox}>
-                    <Text style={styles.rowCode}>{row.courseCode}</Text>
-                    <Text style={styles.rowName}>{row.courseName}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      row.status === 'Assigned'
-                        ? styles.statusAssigned
-                        : row.status === 'Needs Review'
-                        ? styles.statusReview
-                        : styles.statusConflict,
-                    ]}
-                  >
-                    <Text
+            {auditRows.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <MaterialIcons name="fact-check" size={36} color={Colors.outlineVariant} />
+                <Text style={styles.emptyTitle}>No Faculty Allocations Available</Text>
+                <Text style={styles.emptySub}>
+                  No course allocations have been recorded for this cohort yet.
+                </Text>
+                <Pressable
+                  style={styles.emptyActionBtn}
+                  onPress={() => router.push('/hod/faculty-allocation')}
+                >
+                  <Text style={styles.emptyActionText}>Configure Allocation</Text>
+                  <MaterialIcons name="arrow-forward" size={14} color="#0F2942" />
+                </Pressable>
+              </View>
+            ) : (
+              auditRows.map((row) => (
+                <View key={row.courseCode} style={styles.rowCard}>
+                  <View style={styles.rowTop}>
+                    <View style={styles.rowCodeBox}>
+                      <Text style={styles.rowCode}>{row.courseCode}</Text>
+                      <Text style={styles.rowName}>{row.courseName}</Text>
+                    </View>
+                    <View
                       style={[
-                        styles.statusBadgeText,
+                        styles.statusBadge,
                         row.status === 'Assigned'
-                          ? styles.statusAssignedText
+                          ? styles.statusAssigned
                           : row.status === 'Needs Review'
-                          ? styles.statusReviewText
-                          : styles.statusConflictText,
+                          ? styles.statusReview
+                          : styles.statusConflict,
                       ]}
                     >
-                      {row.status}
+                      <Text
+                        style={[
+                          styles.statusBadgeText,
+                          row.status === 'Assigned'
+                            ? styles.statusAssignedText
+                            : row.status === 'Needs Review'
+                            ? styles.statusReviewText
+                            : styles.statusConflictText,
+                        ]}
+                      >
+                        {row.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Comparison Grid */}
+                  <View style={styles.compareGrid}>
+                    <View style={styles.compareCol}>
+                      <Text style={styles.compareLabel}>AC INPUT RECOMMENDATION</Text>
+                      <Text style={styles.acInputText}>{row.acInput}</Text>
+                    </View>
+                    <View style={styles.compareCol}>
+                      <Text style={styles.compareLabel}>HOD BINDING ALLOCATION</Text>
+                      <Text style={styles.hodAssignedText}>{row.hodAssigned}</Text>
+                    </View>
+                  </View>
+
+                  {/* Footer metadata */}
+                  <View style={styles.rowFooter}>
+                    <Text style={styles.rowMetaText}>
+                      Section {row.section} • {row.periods} Periods/Wk
                     </Text>
+                    {row.status !== 'Assigned' && (
+                      <Pressable
+                        onPress={() => router.push('/hod/faculty-allocation')}
+                        style={styles.fixBtn}
+                      >
+                        <Text style={styles.fixBtnText}>Assign Now</Text>
+                      </Pressable>
+                    )}
                   </View>
                 </View>
-
-                {/* Comparison Grid */}
-                <View style={styles.compareGrid}>
-                  <View style={styles.compareCol}>
-                    <Text style={styles.compareLabel}>AC INPUT RECOMMENDATION</Text>
-                    <Text style={styles.acInputText}>{row.acInput}</Text>
-                  </View>
-                  <View style={styles.compareCol}>
-                    <Text style={styles.compareLabel}>HOD BINDING ALLOCATION</Text>
-                    <Text style={styles.hodAssignedText}>{row.hodAssigned}</Text>
-                  </View>
-                </View>
-
-                {/* Footer metadata */}
-                <View style={styles.rowFooter}>
-                  <Text style={styles.rowMetaText}>
-                    Section {row.section} • {row.periods} Periods/Wk
-                  </Text>
-                  {row.status !== 'Assigned' && (
-                    <Pressable
-                      onPress={() => router.push('/hod/faculty-allocation')}
-                      style={styles.fixBtn}
-                    >
-                      <Text style={styles.fixBtnText}>Assign Now</Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         </View>
 
@@ -467,5 +445,43 @@ const styles = StyleSheet.create({
   },
   inspectBtn: {
     backgroundColor: '#2563EB',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.card,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  emptyTitle: {
+    ...Typography.titleMedium,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: Spacing.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surfaceVariant,
+  },
+  emptyActionText: {
+    ...Typography.labelMedium,
+    color: '#0F2942',
+    fontWeight: '700',
   },
 });

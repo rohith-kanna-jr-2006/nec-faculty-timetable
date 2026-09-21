@@ -16,6 +16,8 @@ import PrimaryButton from '../../components/PrimaryButton';
 import {
   getAcademicContext,
   getHODFacultyAllocations,
+  getCurriculumCourses,
+  getCourseFacultyHandlers,
 } from '../../constants/demoData';
 
 export default function CourseFacultyInputScreen() {
@@ -23,64 +25,7 @@ export default function CourseFacultyInputScreen() {
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
   const allocations = getHODFacultyAllocations();
-
-  // Advisory Syllabus & AC Recommended Faculty Pool
-  const acCourseInputs = [
-    {
-      code: '22CSC14',
-      name: 'Principles of Compiler Design',
-      category: 'THEORY',
-      periods: 4,
-      acRecommendedFaculty: [
-        { id: 'CSE-FAC-042', name: 'Ms. C. Navamani', role: 'Primary AC Rec', exp: '8 Yrs' },
-        { id: 'CSE-FAC-014', name: 'Dr. K. Senthil Kumar', role: 'Alternate', exp: '14 Yrs' },
-      ],
-      acInputNotes: 'Syllabus unit 4-5 requires distributed AST parsing expertise.',
-    },
-    {
-      code: '22CSC15',
-      name: 'Cloud Computing & Virtualization',
-      category: 'THEORY',
-      periods: 4,
-      acRecommendedFaculty: [
-        { id: 'CSE-FAC-021', name: 'Dr. M. Kavitha', role: 'Primary AC Rec', exp: '12 Yrs' },
-        { id: 'CSE-FAC-038', name: 'Mr. P. Vignesh', role: 'Alternate', exp: '6 Yrs' },
-      ],
-      acInputNotes: 'AWS Academy badge holder recommended.',
-    },
-    {
-      code: '22CSL07',
-      name: 'Compiler Design Laboratory',
-      category: 'LAB',
-      periods: 4,
-      acRecommendedFaculty: [
-        { id: 'CSE-FAC-042', name: 'Ms. C. Navamani', role: 'Primary Lab Guide', exp: '8 Yrs' },
-        { id: 'CSE-FAC-055', name: 'Mrs. S. Deepa', role: 'Additional Staff', exp: '5 Yrs' },
-      ],
-      acInputNotes: 'Requires 4-period continuous laboratory block.',
-    },
-    {
-      code: '22CSL08',
-      name: 'Cloud & Network Systems Lab',
-      category: 'LAB',
-      periods: 4,
-      acRecommendedFaculty: [
-        { id: 'CSE-FAC-021', name: 'Dr. M. Kavitha', role: 'Primary Lab Guide', exp: '12 Yrs' },
-        { id: 'CSE-FAC-038', name: 'Mr. P. Vignesh', role: 'Additional Staff', exp: '6 Yrs' },
-      ],
-      acInputNotes: 'High memory nodes in Server Lab 2.',
-    },
-    {
-      code: '22CSE03',
-      name: 'Professional Elective: Cryptography & Network Security',
-      category: 'ELECTIVE',
-      periods: 3,
-      acRecommendedFaculty: [
-        { id: 'CSE-FAC-009', name: 'Dr. T. Rajesh', role: 'Primary AC Rec', exp: '18 Yrs' },
-      ],
-      acInputNotes: 'Elective Track 2 offering.',
-    },
-  ];
+  const courses = getCurriculumCourses();
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>
@@ -115,92 +60,114 @@ export default function CourseFacultyInputScreen() {
         </View>
 
         {/* Course Cards List */}
-        <View style={styles.courseList}>
-          {acCourseInputs.map((course) => {
-            const assigned = allocations[course.code];
+        {courses.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <MaterialIcons name="menu-book" size={36} color={Colors.outlineVariant} />
+            <Text style={styles.emptyTitle}>No course faculty input available</Text>
+            <Text style={styles.emptySub}>
+              The Academic Coordinator has not registered curriculum courses or subject handlers yet for this cohort.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.courseList}>
+            {courses.map((course) => {
+              const assigned = allocations[course.code];
+              const handlers = getCourseFacultyHandlers(course.code);
 
-            return (
-              <View key={course.code} style={styles.courseCard}>
-                {/* Course Header */}
-                <View style={styles.courseHeader}>
-                  <View style={styles.codeRow}>
-                    <Text style={styles.courseCode}>{course.code}</Text>
-                    <View
-                      style={[
-                        styles.categoryPill,
-                        course.category === 'THEORY'
-                          ? styles.catTheory
-                          : course.category === 'LAB'
-                          ? styles.catLab
-                          : styles.catElective,
-                      ]}
-                    >
-                      <Text style={styles.categoryPillText}>{course.category}</Text>
-                    </View>
-                    <Text style={styles.periodsTag}>{course.periods} Periods/Wk</Text>
-                  </View>
-                  <Text style={styles.courseName}>{course.name}</Text>
-                </View>
-
-                {/* Section A: AC Input / Recommended Faculty */}
-                <View style={styles.sectionBlock}>
-                  <View style={styles.blockTitleRow}>
-                    <MaterialIcons name="group" size={15} color="#2563EB" />
-                    <Text style={styles.blockTitleAC}>AC SUBJECT HANDLED FACULTY INPUT</Text>
-                  </View>
-
-                  <View style={styles.recommendedPool}>
-                    {course.acRecommendedFaculty.map((fac) => (
-                      <View key={fac.id} style={styles.recItem}>
-                        <View style={styles.recLeft}>
-                          <Text style={styles.recName}>{fac.name}</Text>
-                          <Text style={styles.recMeta}>
-                            {fac.role} • {fac.exp}
-                          </Text>
-                        </View>
-                        <Text style={styles.recId}>{fac.id}</Text>
+              return (
+                <View key={course.code} style={styles.courseCard}>
+                  {/* Course Header */}
+                  <View style={styles.courseHeader}>
+                    <View style={styles.codeRow}>
+                      <Text style={styles.courseCode}>{course.code}</Text>
+                      <View
+                        style={[
+                          styles.categoryPill,
+                          course.category === 'THEORY'
+                            ? styles.catTheory
+                            : course.category === 'LAB'
+                            ? styles.catLab
+                            : styles.catElective,
+                        ]}
+                      >
+                        <Text style={styles.categoryPillText}>{course.category}</Text>
                       </View>
-                    ))}
-                  </View>
-
-                  {course.acInputNotes && (
-                    <View style={styles.acNotesBox}>
-                      <Text style={styles.acNotesLabel}>AC Note:</Text>
-                      <Text style={styles.acNotesText}>{course.acInputNotes}</Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Section B: HOD Binding Decision State */}
-                <View style={styles.sectionBlockDecision}>
-                  <View style={styles.blockTitleRow}>
-                    <MaterialIcons name="how-to-reg" size={15} color="#0F2942" />
-                    <Text style={styles.blockTitleHOD}>HOD ASSIGNED FACULTY</Text>
-                  </View>
-
-                  {assigned ? (
-                    <View style={styles.assignedBox}>
-                      <MaterialIcons name="check-circle" size={18} color="#059669" />
-                      <View style={styles.assignedInfo}>
-                        <Text style={styles.assignedFacultyName}>{assigned.facultyName}</Text>
-                        <Text style={styles.assignedMeta}>
-                          {assigned.facultyId} • Binding HOD Order
-                        </Text>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.pendingBox}>
-                      <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
-                      <Text style={styles.pendingText}>
-                        Pending Final HOD Allocation Decision
+                      <Text style={styles.periodsTag}>
+                        {course.periods || course.periodsPerWeek || 0} Periods/Wk
                       </Text>
                     </View>
-                  )}
+                    <Text style={styles.courseName}>{course.name}</Text>
+                  </View>
+
+                  {/* Section A: AC Input / Recommended Faculty */}
+                  <View style={styles.sectionBlock}>
+                    <View style={styles.blockTitleRow}>
+                      <MaterialIcons name="group" size={15} color="#2563EB" />
+                      <Text style={styles.blockTitleAC}>AC SUBJECT HANDLED FACULTY INPUT</Text>
+                    </View>
+
+                    {handlers.length === 0 ? (
+                      <View style={styles.emptyHandlersBox}>
+                        <Text style={styles.emptyHandlersText}>
+                          No subject handled faculty recommendations recorded for this course.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.recommendedPool}>
+                        {handlers.map((fac) => (
+                          <View key={fac.id || fac.facultyId} style={styles.recItem}>
+                            <View style={styles.recLeft}>
+                              <Text style={styles.recName}>{fac.name || fac.facultyName}</Text>
+                              <Text style={styles.recMeta}>
+                                {fac.role || fac.designation || 'Faculty'}
+                                {fac.experience || fac.exp ? ` • ${fac.experience || fac.exp}` : ''}
+                              </Text>
+                            </View>
+                            <Text style={styles.recId}>{fac.id || fac.facultyId}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {course.acInputNotes && (
+                      <View style={styles.acNotesBox}>
+                        <Text style={styles.acNotesLabel}>AC Note:</Text>
+                        <Text style={styles.acNotesText}>{course.acInputNotes}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Section B: HOD Binding Decision State */}
+                  <View style={styles.sectionBlockDecision}>
+                    <View style={styles.blockTitleRow}>
+                      <MaterialIcons name="how-to-reg" size={15} color="#0F2942" />
+                      <Text style={styles.blockTitleHOD}>HOD ASSIGNED FACULTY</Text>
+                    </View>
+
+                    {assigned ? (
+                      <View style={styles.assignedBox}>
+                        <MaterialIcons name="check-circle" size={18} color="#059669" />
+                        <View style={styles.assignedInfo}>
+                          <Text style={styles.assignedFacultyName}>{assigned.facultyName}</Text>
+                          <Text style={styles.assignedMeta}>
+                            {assigned.facultyId} • Binding HOD Order
+                          </Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.pendingBox}>
+                        <MaterialIcons name="hourglass-empty" size={16} color="#D97706" />
+                        <Text style={styles.pendingText}>
+                          Pending Final HOD Allocation Decision
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Action Button: Proceed to Allocation */}
         <View style={styles.footerActionCard}>
@@ -492,5 +459,39 @@ const styles = StyleSheet.create({
   },
   proceedBtn: {
     backgroundColor: '#0F2942',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.card,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    ...Typography.titleMedium,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyHandlersBox: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  emptyHandlersText: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    fontStyle: 'italic',
+    fontSize: 12,
   },
 });

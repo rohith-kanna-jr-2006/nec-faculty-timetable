@@ -18,7 +18,9 @@ import {
   getAcademicContext,
   getHODFacultyAllocations,
   setHODFacultyAllocation,
-  AVAILABLE_FACULTY_CANDIDATES,
+  getCurriculumCourses,
+  getCourseFacultyHandlers,
+  getAvailableFacultyCandidates,
 } from '../../constants/demoData';
 
 export default function HODFacultyAllocationScreen() {
@@ -26,52 +28,11 @@ export default function HODFacultyAllocationScreen() {
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
   const currentAllocations = getHODFacultyAllocations();
+  const courses = getCurriculumCourses();
+  const candidates = getAvailableFacultyCandidates();
 
   const [allocations, setAllocationsState] = useState(currentAllocations);
-  const [activeCourseCode, setActiveCourseCode] = useState('22CSC14');
-
-  const courses = [
-    {
-      code: '22CSC14',
-      name: 'Principles of Compiler Design',
-      type: 'THEORY',
-      periods: 4,
-      handledBy: ['Ms. C. Navamani', 'Dr. K. Senthil Kumar'],
-      defaultFacultyId: 'CSE-FAC-042',
-    },
-    {
-      code: '22CSC15',
-      name: 'Cloud Computing & Virtualization',
-      type: 'THEORY',
-      periods: 4,
-      handledBy: ['Dr. M. Kavitha', 'Mr. P. Vignesh'],
-      defaultFacultyId: 'CSE-FAC-021',
-    },
-    {
-      code: '22CSL07',
-      name: 'Compiler Design Laboratory',
-      type: 'LAB',
-      periods: 4,
-      handledBy: ['Ms. C. Navamani', 'Mrs. S. Deepa'],
-      defaultFacultyId: 'CSE-FAC-042',
-    },
-    {
-      code: '22CSL08',
-      name: 'Cloud & Network Systems Lab',
-      type: 'LAB',
-      periods: 4,
-      handledBy: ['Dr. M. Kavitha', 'Mr. P. Vignesh'],
-      defaultFacultyId: 'CSE-FAC-021',
-    },
-    {
-      code: '22CSE03',
-      name: 'Cryptography & Network Security',
-      type: 'ELECTIVE',
-      periods: 3,
-      handledBy: ['Dr. T. Rajesh'],
-      defaultFacultyId: 'CSE-FAC-009',
-    },
-  ];
+  const [activeCourseCode, setActiveCourseCode] = useState(courses[0]?.code || null);
 
   const handleSelectFaculty = (courseCode, faculty) => {
     const updated = setHODFacultyAllocation(courseCode, {
@@ -117,108 +78,130 @@ export default function HODFacultyAllocationScreen() {
         </View>
 
         {/* Course Cards */}
-        <View style={styles.courseList}>
-          {courses.map((c) => {
-            const currentAssignment = allocations[c.code];
-            const isAssigned = !!currentAssignment;
+        {courses.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <MaterialIcons name="assignment-late" size={36} color={Colors.outlineVariant} />
+            <Text style={styles.emptyTitle}>No courses available for allocation</Text>
+            <Text style={styles.emptySub}>
+              Curriculum courses have not been registered by the Academic Coordinator yet.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.courseList}>
+            {courses.map((c) => {
+              const currentAssignment = allocations[c.code];
+              const isAssigned = !!currentAssignment;
+              const handlers = getCourseFacultyHandlers(c.code) || [];
+              const handledNames = handlers.map((h) => h.name || h.facultyName);
+              const courseType = c.category || c.type || 'THEORY';
+              const periods = c.periods || c.periodsPerWeek || 0;
 
-            return (
-              <View key={c.code} style={styles.allocationCard}>
-                {/* Course Details Header */}
-                <View style={styles.allocHeader}>
-                  <View style={styles.allocHeaderLeft}>
-                    <Text style={styles.allocCode}>{c.code}</Text>
+              return (
+                <View key={c.code} style={styles.allocationCard}>
+                  {/* Course Details Header */}
+                  <View style={styles.allocHeader}>
+                    <View style={styles.allocHeaderLeft}>
+                      <Text style={styles.allocCode}>{c.code}</Text>
+                      <View
+                        style={[
+                          styles.catBadge,
+                          courseType === 'THEORY'
+                            ? styles.catTheory
+                            : courseType === 'LAB'
+                            ? styles.catLab
+                            : styles.catElective,
+                        ]}
+                      >
+                        <Text style={styles.catBadgeText}>{courseType}</Text>
+                      </View>
+                      <Text style={styles.periodsBadge}>{periods} Periods</Text>
+                    </View>
                     <View
                       style={[
-                        styles.catBadge,
-                        c.type === 'THEORY'
-                          ? styles.catTheory
-                          : c.type === 'LAB'
-                          ? styles.catLab
-                          : styles.catElective,
+                        styles.statusChip,
+                        isAssigned ? styles.statusChipGreen : styles.statusChipAmber,
                       ]}
                     >
-                      <Text style={styles.catBadgeText}>{c.type}</Text>
-                    </View>
-                    <Text style={styles.periodsBadge}>{c.periods} Periods</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statusChip,
-                      isAssigned ? styles.statusChipGreen : styles.statusChipAmber,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipText,
-                        isAssigned ? styles.statusChipGreenText : styles.statusChipAmberText,
-                      ]}
-                    >
-                      {isAssigned ? 'Assigned' : 'Pending HOD'}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.allocName}>{c.name}</Text>
-
-                {/* Handled by (AC Input) */}
-                <View style={styles.handledByRow}>
-                  <Text style={styles.handledByLabel}>AC Subject Pool:</Text>
-                  <Text style={styles.handledByVal}>{c.handledBy.join(' • ')}</Text>
-                </View>
-
-                {/* Current HOD Assignment */}
-                <View style={styles.assignedBox}>
-                  <Text style={styles.assignedBoxLabel}>HOD FINAL ASSIGNMENT:</Text>
-                  {isAssigned ? (
-                    <View style={styles.assignedSuccessRow}>
-                      <MaterialIcons name="check-circle" size={16} color="#059669" />
-                      <Text style={styles.assignedSuccessText}>
-                        {currentAssignment.facultyName} ({currentAssignment.facultyId})
+                      <Text
+                        style={[
+                          styles.statusChipText,
+                          isAssigned ? styles.statusChipGreenText : styles.statusChipAmberText,
+                        ]}
+                      >
+                        {isAssigned ? 'Assigned' : 'Pending HOD'}
                       </Text>
                     </View>
-                  ) : (
-                    <Text style={styles.unassignedText}>[ Select Faculty Below ]</Text>
-                  )}
-                </View>
+                  </View>
 
-                {/* Faculty Selection Pills */}
-                <Text style={styles.selectFacultyLabel}>Select or Override Faculty:</Text>
-                <View style={styles.facultyChipsContainer}>
-                  {AVAILABLE_FACULTY_CANDIDATES.map((faculty) => {
-                    const isSelected = currentAssignment?.facultyId === faculty.id;
-                    const isAcRec = c.handledBy.some((name) => name.includes(faculty.name.split(' ').slice(-1)[0]));
+                  <Text style={styles.allocName}>{c.name}</Text>
 
-                    return (
-                      <Pressable
-                        key={faculty.id}
-                        style={[
-                          styles.facultyChip,
-                          isSelected && styles.facultyChipSelected,
-                        ]}
-                        onPress={() => handleSelectFaculty(c.code, faculty)}
-                      >
-                        <View style={styles.chipTop}>
-                          <Text style={[styles.chipName, isSelected && styles.chipNameSelected]}>
-                            {faculty.name}
-                          </Text>
-                          {isAcRec && (
-                            <View style={styles.acRecDot}>
-                              <Text style={styles.acRecDotText}>AC</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={styles.chipMeta}>
-                          {faculty.designation} • Load: {faculty.currentLoad}/{faculty.maxLoad}
+                  {/* Handled by (AC Input) */}
+                  <View style={styles.handledByRow}>
+                    <Text style={styles.handledByLabel}>AC Subject Pool:</Text>
+                    <Text style={styles.handledByVal}>
+                      {handledNames.length > 0 ? handledNames.join(' • ') : 'No AC pool input'}
+                    </Text>
+                  </View>
+
+                  {/* Current HOD Assignment */}
+                  <View style={styles.assignedBox}>
+                    <Text style={styles.assignedBoxLabel}>HOD FINAL ASSIGNMENT:</Text>
+                    {isAssigned ? (
+                      <View style={styles.assignedSuccessRow}>
+                        <MaterialIcons name="check-circle" size={16} color="#059669" />
+                        <Text style={styles.assignedSuccessText}>
+                          {currentAssignment.facultyName} ({currentAssignment.facultyId})
                         </Text>
-                      </Pressable>
-                    );
-                  })}
+                      </View>
+                    ) : (
+                      <Text style={styles.unassignedText}>[ Select Faculty Below ]</Text>
+                    )}
+                  </View>
+
+                  {/* Faculty Selection Pills */}
+                  <Text style={styles.selectFacultyLabel}>Select or Override Faculty:</Text>
+                  <View style={styles.facultyChipsContainer}>
+                    {candidates.length === 0 ? (
+                      <Text style={styles.emptyCandidatesText}>No eligible faculty candidates available</Text>
+                    ) : (
+                      candidates.map((faculty) => {
+                        const isSelected = currentAssignment?.facultyId === faculty.id;
+                        const isAcRec = handledNames.some((name) =>
+                          name.includes(faculty.name.split(' ').slice(-1)[0])
+                        );
+
+                        return (
+                          <Pressable
+                            key={faculty.id}
+                            style={[
+                              styles.facultyChip,
+                              isSelected && styles.facultyChipSelected,
+                            ]}
+                            onPress={() => handleSelectFaculty(c.code, faculty)}
+                          >
+                            <View style={styles.chipTop}>
+                              <Text style={[styles.chipName, isSelected && styles.chipNameSelected]}>
+                                {faculty.name}
+                              </Text>
+                              {isAcRec && (
+                                <View style={styles.acRecDot}>
+                                  <Text style={styles.acRecDotText}>AC</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.chipMeta}>
+                              {faculty.designation} • Load: {faculty.currentLoad || 0}/{faculty.maxLoad || 16}
+                            </Text>
+                          </Pressable>
+                        );
+                      })
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Footer Action Card */}
         <View style={styles.footerCard}>
@@ -513,5 +496,35 @@ const styles = StyleSheet.create({
   },
   proceedBtn: {
     backgroundColor: '#0F2942',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.card,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    ...Typography.titleMedium,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyCandidatesText: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    fontStyle: 'italic',
+    padding: Spacing.sm,
   },
 });

@@ -16,14 +16,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import StitchLogo from '../../components/StitchLogo';
 import PrimaryButton from '../../components/PrimaryButton';
-import { getHODProfile } from '../../constants/demoData';
+import { getHODProfile, setHODProfile } from '../../constants/demoData';
 
 export default function HODLoginScreen() {
   const router = useRouter();
   const hodProfile = getHODProfile();
 
-  const [hodId, setHodId] = useState(hodProfile?.email || 'hod.cse@nandhaengg.org');
-  const [password, setPassword] = useState('HODExecutive2024#');
+  const [hodId, setHodId] = useState(hodProfile?.email || '');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +37,27 @@ export default function HODLoginScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
+      setHODProfile({
+        id: 'HOD-AUTH-001',
+        name: hodId.includes('@')
+          ? hodId.split('@')[0].replace('.', ' ').toUpperCase()
+          : hodId.toUpperCase(),
+        initials: (hodId[0] || 'H').toUpperCase(),
+        designation: 'Head of Department',
+        department: 'Dept. of Computer Science & Engg.',
+        shortDept: 'CSE',
+        email: hodId,
+        academicYear: 'AY 2024-25',
+        semester: 'Odd Semester',
+        regulation: 'Autonomous Regulation R2022',
+        status: 'Authenticated Executive',
+        role: 'Head of Department (L1 Authority)',
+        cabin: 'HOD Secretariat, CSE Main Block',
+        phone: 'Official ERP Channel',
+        clearanceLevel: 'LEVEL 01 • STATUTORY EXECUTIVE',
+      });
       router.replace('/hod');
-    }, 700);
+    }, 500);
   };
 
   return (
@@ -98,7 +117,7 @@ export default function HODLoginScreen() {
                   style={styles.textInput}
                   value={hodId}
                   onChangeText={setHodId}
-                  placeholder="hod.cse@nandhaengg.org"
+                  placeholder="hod@institution.edu"
                   placeholderTextColor={Colors.onSurfaceVariant}
                   keyboardType="email-address"
                   autoCapitalize="none"

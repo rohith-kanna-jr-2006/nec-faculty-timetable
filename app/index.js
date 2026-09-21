@@ -74,6 +74,14 @@ export default function AppEntry() {
             onPress={() => router.replace('/hod/login')}
             style={styles.hodBtn}
           />
+          <PrimaryButton
+            title="Faculty Workload Master Register"
+            variant="outline"
+            icon="assignment-ind"
+            iconRight="arrow-forward"
+            onPress={() => router.push('/workload')}
+            style={styles.workloadBtn}
+          />
         </View>
       </View>
 
@@ -225,6 +233,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#0F2942',
     backgroundColor: '#F8FAFC',
+  },
+  workloadBtn: {
+    width: '100%',
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.surfaceContainerLowest,
   },
   footer: {
     alignItems: 'center',

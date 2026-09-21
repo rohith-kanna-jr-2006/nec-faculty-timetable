@@ -19,6 +19,7 @@ import {
   getTimetableVersion,
   getClassAdvisors,
   getHODFacultyAllocations,
+  getCurriculumCourses,
   subscribeState,
 } from '../../constants/demoData';
 
@@ -29,6 +30,7 @@ export default function HODDashboardScreen() {
   const [timetableVersion, setTimetableVersionState] = useState(getTimetableVersion());
   const [advisors, setAdvisors] = useState(getClassAdvisors());
   const [allocations, setAllocations] = useState(getHODFacultyAllocations());
+  const [courses, setCourses] = useState(getCurriculumCourses());
 
   useEffect(() => {
     const unsubscribe = subscribeState(() => {
@@ -37,17 +39,30 @@ export default function HODDashboardScreen() {
       setTimetableVersionState(getTimetableVersion());
       setAdvisors(getClassAdvisors());
       setAllocations(getHODFacultyAllocations());
+      setCourses(getCurriculumCourses());
     });
     return unsubscribe;
   }, []);
 
-  const activeCohort = `${academicContext.year || 'III Year'} • ${academicContext.semester || 'Sem V'} • ${academicContext.section || 'CSE-C'}`;
+  const hasContext = !!(academicContext.year || academicContext.section);
+  const activeCohort = hasContext
+    ? `${academicContext.year || ''} • ${academicContext.semester || ''} • ${academicContext.section || ''}`
+    : 'No Academic Context Selected';
+
   const advisorCount = Object.keys(advisors || {}).length;
+  const advisorEntries = Object.entries(advisors || {});
+  const courseCount = courses.length;
+  const allocationCount = Object.keys(allocations || {}).length;
+  const scheduledPeriods = timetableVersion.totalScheduledPeriods || 0;
   const isApproved = timetableVersion.status === 'APPROVED' || timetableVersion.status === 'PUBLISHED';
+  const hasTimetable = timetableVersion.status !== 'NO_TIMETABLE' && scheduledPeriods > 0;
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>
-      <HODHeader title="Executive Desk" activeCohort={academicContext.section ? `${academicContext.year || 'III'} / ${academicContext.semester || 'V'} / ${academicContext.section}` : 'III / V / CSE-C'} />
+      <HODHeader
+        title="Executive Desk"
+        activeCohort={hasContext ? `${academicContext.year || ''} / ${academicContext.semester || ''} / ${academicContext.section || ''}` : 'No Scope Selected'}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -62,22 +77,22 @@ export default function HODDashboardScreen() {
               <Text style={styles.executiveBadgeText}>Head of Department Desk</Text>
             </View>
             <View style={styles.ayBadge}>
-              <Text style={styles.ayBadgeText}>AY 2024-25 ODD</Text>
+              <Text style={styles.ayBadgeText}>{academicContext.academicYear || 'No Academic Year'}</Text>
             </View>
           </View>
 
           <View style={styles.executiveMainRow}>
             <View style={styles.executiveAvatar}>
-              <Text style={styles.executiveAvatarText}>{hodProfile?.initials || 'SK'}</Text>
+              <Text style={styles.executiveAvatarText}>{hodProfile?.initials || 'HD'}</Text>
             </View>
             <View style={styles.executiveInfoCol}>
-              <Text style={styles.executiveName}>{hodProfile?.name || 'Dr. S. Karthik, M.E., Ph.D.'}</Text>
+              <Text style={styles.executiveName}>{hodProfile?.name || 'Unauthenticated Session'}</Text>
               <Text style={styles.executiveDesignation}>
-                {hodProfile?.designation || 'Professor & Head of Department'}
+                {hodProfile?.designation || 'Head of Department'}
               </Text>
               <View style={styles.authorityRow}>
                 <MaterialIcons name="verified" size={14} color="#0284C7" />
-                <Text style={styles.authorityText}>Level 01 Statutory Clearance • Dept. of CSE</Text>
+                <Text style={styles.authorityText}>Level 01 Statutory Clearance • {hodProfile?.department || 'CSE'}</Text>
               </View>
             </View>
           </View>
@@ -92,7 +107,7 @@ export default function HODDashboardScreen() {
               <Text style={styles.contextBarValue}>{activeCohort}</Text>
             </View>
             <View style={styles.contextBarRight}>
-              <Text style={styles.changeScopeText}>Change Scope</Text>
+              <Text style={styles.changeScopeText}>{hasContext ? 'Change Scope' : 'Select Scope'}</Text>
               <MaterialIcons name="chevron-right" size={16} color="#0F2942" />
             </View>
           </Pressable>
@@ -107,13 +122,15 @@ export default function HODDashboardScreen() {
           >
             <View style={styles.bentoTop}>
               <MaterialIcons name="school" size={20} color="#0284C7" />
-              <View style={styles.bentoPillGreen}>
-                <Text style={styles.bentoPillGreenText}>Sole Authority</Text>
+              <View style={advisorCount > 0 ? styles.bentoPillGreen : styles.bentoPillGray}>
+                <Text style={advisorCount > 0 ? styles.bentoPillGreenText : styles.bentoPillGrayText}>
+                  {advisorCount > 0 ? 'Sole Authority' : 'Unassigned'}
+                </Text>
               </View>
             </View>
-            <Text style={styles.bentoVal}>{advisorCount} / 4</Text>
+            <Text style={styles.bentoVal}>{advisorCount > 0 ? `${advisorCount} Assigned` : '0 Assigned'}</Text>
             <Text style={styles.bentoTitle}>Class Advisors</Text>
-            <Text style={styles.bentoSub}>Sections A, B, C, D designated</Text>
+            <Text style={styles.bentoSub}>{advisorCount > 0 ? `${advisorCount} section advisors designated` : 'No advisors appointed'}</Text>
           </Pressable>
 
           {/* Bento 2: AC Course Input */}
@@ -123,13 +140,15 @@ export default function HODDashboardScreen() {
           >
             <View style={styles.bentoTop}>
               <MaterialIcons name="input" size={20} color="#2563EB" />
-              <View style={styles.bentoPillBlue}>
-                <Text style={styles.bentoPillBlueText}>AC Input</Text>
+              <View style={courseCount > 0 ? styles.bentoPillBlue : styles.bentoPillGray}>
+                <Text style={courseCount > 0 ? styles.bentoPillBlueText : styles.bentoPillGrayText}>
+                  {courseCount > 0 ? 'AC Input' : 'No Input'}
+                </Text>
               </View>
             </View>
-            <Text style={styles.bentoVal}>12 Courses</Text>
+            <Text style={styles.bentoVal}>{courseCount > 0 ? `${courseCount} Courses` : '0 Courses'}</Text>
             <Text style={styles.bentoTitle}>Subject Handlers</Text>
-            <Text style={styles.bentoSub}>Advisory pool submitted by AC</Text>
+            <Text style={styles.bentoSub}>{courseCount > 0 ? 'Advisory pool submitted by AC' : 'No courses configured'}</Text>
           </Pressable>
 
           {/* Bento 3: Faculty Allocation */}
@@ -139,13 +158,15 @@ export default function HODDashboardScreen() {
           >
             <View style={styles.bentoTop}>
               <MaterialIcons name="how-to-reg" size={20} color="#D97706" />
-              <View style={styles.bentoPillAmber}>
-                <Text style={styles.bentoPillAmberText}>HOD Decision</Text>
+              <View style={allocationCount > 0 ? styles.bentoPillAmber : styles.bentoPillGray}>
+                <Text style={allocationCount > 0 ? styles.bentoPillAmberText : styles.bentoPillGrayText}>
+                  {allocationCount > 0 ? 'HOD Decision' : 'Pending'}
+                </Text>
               </View>
             </View>
-            <Text style={styles.bentoVal}>12 / 12</Text>
+            <Text style={styles.bentoVal}>{courseCount > 0 ? `${allocationCount} / ${courseCount}` : `${allocationCount} Assigned`}</Text>
             <Text style={styles.bentoTitle}>Allocations</Text>
-            <Text style={styles.bentoSub}>Binding faculty assignment</Text>
+            <Text style={styles.bentoSub}>{allocationCount > 0 ? 'Binding assignments active' : 'No faculty allocated'}</Text>
           </Pressable>
 
           {/* Bento 4: Timetable Approval */}
@@ -154,16 +175,16 @@ export default function HODDashboardScreen() {
             onPress={() => router.push('/hod/approval')}
           >
             <View style={styles.bentoTop}>
-              <MaterialIcons name="gavel" size={20} color={isApproved ? '#10B981' : '#DC2626'} />
-              <View style={isApproved ? styles.bentoPillGreen : styles.bentoPillRed}>
-                <Text style={isApproved ? styles.bentoPillGreenText : styles.bentoPillRedText}>
-                  {isApproved ? 'Ratified' : 'Pending HOD'}
+              <MaterialIcons name="gavel" size={20} color={isApproved ? '#10B981' : hasTimetable ? '#D97706' : '#64748B'} />
+              <View style={isApproved ? styles.bentoPillGreen : hasTimetable ? styles.bentoPillAmber : styles.bentoPillGray}>
+                <Text style={isApproved ? styles.bentoPillGreenText : hasTimetable ? styles.bentoPillAmberText : styles.bentoPillGrayText}>
+                  {isApproved ? 'Ratified' : hasTimetable ? 'Pending HOD' : 'No Timetable'}
                 </Text>
               </View>
             </View>
-            <Text style={styles.bentoVal}>{isApproved ? 'Approved' : '35/35 P'}</Text>
+            <Text style={styles.bentoVal}>{isApproved ? 'Approved' : hasTimetable ? `${scheduledPeriods} P` : 'No Data'}</Text>
             <Text style={styles.bentoTitle}>Timetable Status</Text>
-            <Text style={styles.bentoSub}>0 Conflicts • CSE-C Grid</Text>
+            <Text style={styles.bentoSub}>{hasTimetable ? 'Ready for review' : 'Solver not executed'}</Text>
           </Pressable>
         </View>
 
@@ -258,7 +279,7 @@ export default function HODDashboardScreen() {
                 <Text style={styles.queueTitle}>Faculty Allocation Pre-Audit</Text>
                 <Text style={styles.queueTagAlert}>COMPLIANCE</Text>
               </View>
-              <Text style={styles.queueSub}>Verify 12 course allocations against workload thresholds</Text>
+              <Text style={styles.queueSub}>Verify {courseCount} course allocations against workload thresholds</Text>
             </View>
             <MaterialIcons name="chevron-right" size={20} color={Colors.outlineVariant} />
           </Pressable>
@@ -267,51 +288,42 @@ export default function HODDashboardScreen() {
         {/* Departmental Section Progress Tracker */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Department Section Coverage</Text>
-          <Text style={styles.sectionSubText}>Autonomous Regulation R2022 • Odd Semester</Text>
+          <Text style={styles.sectionSubText}>
+            {academicContext.regulation || 'Regulation'} • {academicContext.department || 'CSE'} • {academicContext.academicYear || 'Academic Year'}
+          </Text>
 
-          <View style={styles.cohortStatusCard}>
-            <View style={styles.cohortRow}>
-              <View style={styles.cohortLeft}>
-                <Text style={styles.cohortName}>III Year CSE-A</Text>
-                <Text style={styles.advisorName}>Advisor: Dr. K. Senthil Kumar</Text>
-              </View>
-              <View style={styles.statusBadgeGreen}>
-                <Text style={styles.statusBadgeGreenText}>Approved</Text>
-              </View>
+          {advisorEntries.length === 0 ? (
+            <View style={styles.emptyCoverageCard}>
+              <MaterialIcons name="group" size={32} color={Colors.outlineVariant} />
+              <Text style={styles.emptyCoverageTitle}>No Class Advisors Assigned</Text>
+              <Text style={styles.emptyCoverageSub}>
+                Cohort section records will appear here as Class Advisors are appointed by HOD authority.
+              </Text>
+              <Pressable
+                style={styles.emptyCoverageAction}
+                onPress={() => router.push('/hod/class-advisor')}
+              >
+                <Text style={styles.emptyCoverageActionText}>Appoint Class Advisor</Text>
+                <MaterialIcons name="chevron-right" size={16} color="#0F2942" />
+              </Pressable>
             </View>
-
-            <View style={styles.cohortRow}>
-              <View style={styles.cohortLeft}>
-                <Text style={styles.cohortName}>III Year CSE-B</Text>
-                <Text style={styles.advisorName}>Advisor: Dr. M. Kavitha</Text>
-              </View>
-              <View style={styles.statusBadgeAmber}>
-                <Text style={styles.statusBadgeAmberText}>Solver In-Progress</Text>
-              </View>
+          ) : (
+            <View style={styles.cohortStatusCard}>
+              {advisorEntries.map(([sec, adv]) => (
+                <View key={sec} style={styles.cohortRow}>
+                  <View style={styles.cohortLeft}>
+                    <Text style={styles.cohortName}>{sec}</Text>
+                    <Text style={styles.advisorName}>
+                      Advisor: {adv?.facultyName || adv?.name || 'Unassigned'}
+                    </Text>
+                  </View>
+                  <View style={styles.statusBadgeGreen}>
+                    <Text style={styles.statusBadgeGreenText}>Assigned</Text>
+                  </View>
+                </View>
+              ))}
             </View>
-
-            <View style={[styles.cohortRow, styles.cohortRowHighlight]}>
-              <View style={styles.cohortLeft}>
-                <Text style={[styles.cohortName, { color: '#0F2942', fontWeight: '800' }]}>
-                  III Year CSE-C (Active)
-                </Text>
-                <Text style={styles.advisorName}>Advisor: Ms. C. Navamani</Text>
-              </View>
-              <View style={styles.statusBadgeBlue}>
-                <Text style={styles.statusBadgeBlueText}>Pending HOD Review</Text>
-              </View>
-            </View>
-
-            <View style={styles.cohortRow}>
-              <View style={styles.cohortLeft}>
-                <Text style={styles.cohortName}>III Year CSE-D</Text>
-                <Text style={styles.advisorName}>Advisor: Mr. P. Vignesh</Text>
-              </View>
-              <View style={styles.statusBadgeGray}>
-                <Text style={styles.statusBadgeGrayText}>Input Configured</Text>
-              </View>
-            </View>
-          </View>
+          )}
         </View>
       </ScrollView>
 
@@ -796,6 +808,44 @@ const styles = StyleSheet.create({
   statusBadgeGrayText: {
     color: Colors.onSurfaceVariant,
     fontSize: 10,
+    fontWeight: '700',
+  },
+  emptyCoverageCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.card,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  emptyCoverageTitle: {
+    ...Typography.titleMedium,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyCoverageSub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyCoverageAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: Spacing.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surfaceVariant,
+  },
+  emptyCoverageActionText: {
+    ...Typography.labelMedium,
+    color: '#0F2942',
     fontWeight: '700',
   },
 });

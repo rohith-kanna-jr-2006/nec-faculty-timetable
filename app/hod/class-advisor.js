@@ -18,7 +18,7 @@ import {
   getAcademicContext,
   getClassAdvisors,
   setClassAdvisor,
-  AVAILABLE_FACULTY_CANDIDATES,
+  getAvailableFacultyCandidates,
 } from '../../constants/demoData';
 
 export default function ClassAdvisorScreen() {
@@ -27,22 +27,27 @@ export default function ClassAdvisorScreen() {
   const activeSection = context.section || 'CSE-C';
   const advisors = getClassAdvisors();
   const currentAdvisor = advisors[activeSection];
+  const candidates = getAvailableFacultyCandidates();
 
   const [selectedFacultyId, setSelectedFacultyId] = useState(
-    currentAdvisor?.facultyId || 'CSE-FAC-042'
+    currentAdvisor?.facultyId || (candidates.length > 0 ? candidates[0].id : null)
   );
   const [isSuccessNotice, setIsSuccessNotice] = useState(false);
 
-  const selectedCandidate = AVAILABLE_FACULTY_CANDIDATES.find((f) => f.id === selectedFacultyId);
+  const selectedCandidate = candidates.find((f) => f.id === selectedFacultyId);
 
   const handleConfirmAssignment = () => {
-    if (!selectedCandidate) return;
+    if (!selectedCandidate) {
+      Alert.alert('No Selection', 'Please select a faculty candidate to appoint as Class Advisor.');
+      return;
+    }
 
     setClassAdvisor(activeSection, {
       facultyId: selectedCandidate.id,
       facultyName: selectedCandidate.name,
       designation: selectedCandidate.designation,
-      workload: `${selectedCandidate.currentLoad}/${selectedCandidate.maxLoad}`,
+      workload: `${selectedCandidate.currentLoad || 0}/${selectedCandidate.maxLoad || 16}`,
+      appointedAt: new Date().toISOString().split('T')[0],
     });
 
     setIsSuccessNotice(true);
@@ -91,95 +96,119 @@ export default function ClassAdvisorScreen() {
         <View style={styles.currentCard}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>CURRENT CLASS ADVISOR • {activeSection}</Text>
-            <View style={styles.confirmedBadge}>
-              <MaterialIcons name="check-circle" size={12} color="#059669" />
-              <Text style={styles.confirmedBadgeText}>HOD RATIFIED</Text>
-            </View>
+            {currentAdvisor && (
+              <View style={styles.confirmedBadge}>
+                <MaterialIcons name="check-circle" size={12} color="#059669" />
+                <Text style={styles.confirmedBadgeText}>HOD RATIFIED</Text>
+              </View>
+            )}
           </View>
 
-          <View style={styles.appointeeRow}>
-            <View style={styles.avatarBox}>
-              <Text style={styles.avatarText}>
-                {currentAdvisor?.facultyName
-                  ? currentAdvisor.facultyName.split(' ').map((n) => n[0]).join('').slice(0, 2)
-                  : 'CN'}
-              </Text>
-            </View>
-            <View style={styles.appointeeInfo}>
-              <Text style={styles.appointeeName}>
-                {currentAdvisor?.facultyName || 'Ms. C. Navamani'}
-              </Text>
-              <Text style={styles.appointeeDesig}>
-                {currentAdvisor?.designation || 'Assistant Professor'} • Dept. of CSE
-              </Text>
-              <View style={styles.appointeeMetaRow}>
-                <Text style={styles.metaChip}>ID: {currentAdvisor?.facultyId || 'CSE-FAC-042'}</Text>
-                <Text style={styles.metaChip}>Appointed: {currentAdvisor?.appointedAt || '2024-06-15'}</Text>
+          {currentAdvisor ? (
+            <View style={styles.appointeeRow}>
+              <View style={styles.avatarBox}>
+                <Text style={styles.avatarText}>
+                  {currentAdvisor.facultyName
+                    ? currentAdvisor.facultyName.split(' ').map((n) => n[0]).join('').slice(0, 2)
+                    : 'FA'}
+                </Text>
+              </View>
+              <View style={styles.appointeeInfo}>
+                <Text style={styles.appointeeName}>{currentAdvisor.facultyName}</Text>
+                <Text style={styles.appointeeDesig}>
+                  {currentAdvisor.designation || 'Faculty'} • Dept. of CSE
+                </Text>
+                <View style={styles.appointeeMetaRow}>
+                  {currentAdvisor.facultyId && (
+                    <Text style={styles.metaChip}>ID: {currentAdvisor.facultyId}</Text>
+                  )}
+                  {currentAdvisor.appointedAt && (
+                    <Text style={styles.metaChip}>Appointed: {currentAdvisor.appointedAt}</Text>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.emptyAdvisorBox}>
+              <MaterialIcons name="person-outline" size={28} color={Colors.outlineVariant} />
+              <Text style={styles.emptyAdvisorTitle}>No Class Advisor Assigned</Text>
+              <Text style={styles.emptyAdvisorSub}>
+                No faculty member has been ratified as the Class Advisor for {activeSection} yet. Appoint an eligible candidate below.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Eligible Faculty Roster */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>AVAILABLE ELIGIBLE FACULTY POOL</Text>
-            <Text style={styles.poolCountText}>{AVAILABLE_FACULTY_CANDIDATES.length} Faculty</Text>
+            <Text style={styles.poolCountText}>{candidates.length} Faculty</Text>
           </View>
           <Text style={styles.helperText}>
             Select a candidate below to ratify as Class Advisor for {activeSection}:
           </Text>
 
-          <View style={styles.candidateList}>
-            {AVAILABLE_FACULTY_CANDIDATES.map((faculty) => {
-              const isSelected = selectedFacultyId === faculty.id;
-              const isCurrentlyActiveAdvisor = currentAdvisor?.facultyId === faculty.id;
+          {candidates.length === 0 ? (
+            <View style={styles.emptyCandidatesBox}>
+              <MaterialIcons name="people-outline" size={28} color={Colors.outlineVariant} />
+              <Text style={styles.emptyCandidatesTitle}>No faculty available</Text>
+              <Text style={styles.emptyCandidatesSub}>
+                No faculty candidate records are loaded in the current runtime pool.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.candidateList}>
+              {candidates.map((faculty) => {
+                const isSelected = selectedFacultyId === faculty.id;
+                const isCurrentlyActiveAdvisor = currentAdvisor?.facultyId === faculty.id;
 
-              return (
-                <Pressable
-                  key={faculty.id}
-                  style={[styles.candidateItem, isSelected && styles.candidateItemActive]}
-                  onPress={() => setSelectedFacultyId(faculty.id)}
-                >
-                  <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
-                    {isSelected && <View style={styles.radioDot} />}
-                  </View>
-
-                  <View style={styles.candidateInfo}>
-                    <View style={styles.candidateNameRow}>
-                      <Text style={[styles.candidateName, isSelected && styles.candidateNameActive]}>
-                        {faculty.name}
-                      </Text>
-                      {isCurrentlyActiveAdvisor && (
-                        <View style={styles.currentBadge}>
-                          <Text style={styles.currentBadgeText}>Current Advisor</Text>
-                        </View>
-                      )}
+                return (
+                  <Pressable
+                    key={faculty.id}
+                    style={[styles.candidateItem, isSelected && styles.candidateItemActive]}
+                    onPress={() => setSelectedFacultyId(faculty.id)}
+                  >
+                    <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
+                      {isSelected && <View style={styles.radioDot} />}
                     </View>
-                    <Text style={styles.candidateDesig}>
-                      {faculty.designation} • {faculty.experience} Experience
-                    </Text>
-                    <View style={styles.workloadBarRow}>
-                      <Text style={styles.workloadLabel}>
-                        Matrix Load: {faculty.currentLoad}/{faculty.maxLoad} Periods
+
+                    <View style={styles.candidateInfo}>
+                      <View style={styles.candidateNameRow}>
+                        <Text style={[styles.candidateName, isSelected && styles.candidateNameActive]}>
+                          {faculty.name}
+                        </Text>
+                        {isCurrentlyActiveAdvisor && (
+                          <View style={styles.currentBadge}>
+                            <Text style={styles.currentBadgeText}>Current Advisor</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.candidateDesig}>
+                        {faculty.designation} • {faculty.experience} Experience
                       </Text>
-                      <View style={styles.workloadTrack}>
-                        <View
-                          style={[
-                            styles.workloadFill,
-                            {
-                              width: `${Math.min(100, (faculty.currentLoad / faculty.maxLoad) * 100)}%`,
-                              backgroundColor: faculty.currentLoad >= 14 ? '#D97706' : '#2563EB',
-                            },
-                          ]}
-                        />
+                      <View style={styles.workloadBarRow}>
+                        <Text style={styles.workloadLabel}>
+                          Matrix Load: {faculty.currentLoad}/{faculty.maxLoad} Periods
+                        </Text>
+                        <View style={styles.workloadTrack}>
+                          <View
+                            style={[
+                              styles.workloadFill,
+                              {
+                                width: `${Math.min(100, (faculty.currentLoad / faculty.maxLoad) * 100)}%`,
+                                backgroundColor: faculty.currentLoad >= 14 ? '#D97706' : '#2563EB',
+                              },
+                            ]}
+                          />
+                        </View>
                       </View>
                     </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Confirmation Action Box */}
@@ -489,5 +518,43 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     backgroundColor: '#2563EB',
+  },
+  emptyAdvisorBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+  },
+  emptyAdvisorTitle: {
+    ...Typography.titleSmall,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyAdvisorSub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyCandidatesBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+  },
+  emptyCandidatesTitle: {
+    ...Typography.titleSmall,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyCandidatesSub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

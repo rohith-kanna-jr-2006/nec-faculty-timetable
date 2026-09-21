@@ -15,6 +15,7 @@ import PrimaryButton from '../../components/PrimaryButton';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import {
   FACULTY_PROFILE,
+  DEFAULT_FACULTY_PROFILE,
   ASSIGNED_COURSES,
   NOTIFICATIONS_DATA,
   getTodaySchedule,
@@ -28,6 +29,7 @@ export default function FacultyDashboard() {
   const todayData = getTodaySchedule();
   const workload = getFacultyWorkload();
   const unreadNotifs = NOTIFICATIONS_DATA.filter((n) => n.status === 'unread');
+  const facultyProfile = FACULTY_PROFILE || DEFAULT_FACULTY_PROFILE || {};
 
   return (
     <View style={styles.screenContainer}>
@@ -45,7 +47,7 @@ export default function FacultyDashboard() {
         <Card variant="low" style={styles.identityCard}>
           <View style={styles.identityTopRow}>
             <View style={styles.avatarBox}>
-              <Text style={styles.avatarInitials}>{FACULTY_PROFILE.initials}</Text>
+              <Text style={styles.avatarInitials}>{facultyProfile.initials || 'CN'}</Text>
               <View style={styles.verifiedDot}>
                 <MaterialIcons name="check" size={10} color="#ffffff" />
               </View>
@@ -54,22 +56,22 @@ export default function FacultyDashboard() {
             <View style={styles.identityDetails}>
               <View style={styles.nameIdRow}>
                 <Text style={styles.facultyName} numberOfLines={1}>
-                  {FACULTY_PROFILE.name}
+                  {facultyProfile.name || 'Faculty Member'}
                 </Text>
                 <View style={styles.idBadge}>
-                  <Text style={styles.idBadgeText}>{FACULTY_PROFILE.id}</Text>
+                  <Text style={styles.idBadgeText}>{facultyProfile.id || 'FAC'}</Text>
                 </View>
               </View>
 
               <Text style={styles.facultyTitle} numberOfLines={1}>
-                {FACULTY_PROFILE.designation} • {FACULTY_PROFILE.department}
+                {facultyProfile.designation || 'Faculty'} • {facultyProfile.department || 'CSE'}
               </Text>
 
               <View style={styles.identityTagsRow}>
                 <View style={styles.termBadge}>
-                  <Text style={styles.termBadgeText}>{FACULTY_PROFILE.academicYear}</Text>
+                  <Text style={styles.termBadgeText}>{facultyProfile.academicYear || 'AY 2024-25'}</Text>
                 </View>
-                <Text style={styles.semText}>{FACULTY_PROFILE.semester}</Text>
+                <Text style={styles.semText}>{facultyProfile.semester || 'Odd Semester'}</Text>
                 <View style={styles.viewerBadge}>
                   <MaterialIcons name="verified" size={12} color={Colors.onTertiaryContainer} />
                   <Text style={styles.viewerBadgeText}>Viewer</Text>

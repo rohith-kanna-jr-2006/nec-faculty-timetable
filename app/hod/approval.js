@@ -39,17 +39,31 @@ export default function HODApprovalScreen() {
     return unsub;
   }, []);
 
-  const isApproved = timetableVersion.status === 'APPROVED' || timetableVersion.status === 'PUBLISHED';
+  const hasTimetable =
+    timetableVersion.status !== TIMETABLE_STATUSES.NO_TIMETABLE &&
+    timetableVersion.id !== null &&
+    (timetableVersion.totalScheduledPeriods || 0) > 0;
+  const isApproved =
+    timetableVersion.status === TIMETABLE_STATUSES.APPROVED ||
+    timetableVersion.status === TIMETABLE_STATUSES.PUBLISHED;
 
   const handleApprove = () => {
+    if (!hasTimetable) {
+      Alert.alert(
+        'Action Unavailable',
+        'Cannot ratify: No class timetable has been synthesized or submitted by the Academic Coordinator yet.'
+      );
+      return;
+    }
+
     updateTimetableVersionStatus(TIMETABLE_STATUSES.APPROVED, {
-      approvedBy: hodProfile.name,
-      hodReviewer: hodProfile.name,
+      approvedBy: hodProfile?.name || 'Head of Department',
+      hodReviewer: hodProfile?.name || 'Head of Department',
     });
 
     Alert.alert(
       'Timetable Ratified',
-      `Class timetable for III Year ${activeSection} (AY 2024-25 Odd) has been ratified and signed with HOD Executive Authority seal.`,
+      `Class timetable for ${context.year || 'Target Cohort'} ${activeSection} has been ratified and signed with HOD Executive Authority seal.`,
       [
         {
           text: 'View Official Approval Order',
@@ -107,34 +121,50 @@ export default function HODApprovalScreen() {
         {/* Validation Clearance Audit Box */}
         <View style={styles.auditCard}>
           <View style={styles.auditHeader}>
-            <MaterialIcons name="verified" size={18} color="#059669" />
+            <MaterialIcons
+              name={hasTimetable ? 'verified' : 'hourglass-empty'}
+              size={18}
+              color={hasTimetable ? '#059669' : Colors.onSurfaceVariant}
+            />
             <Text style={styles.auditHeaderTitle}>ENGINE CONSTRAINT AUDIT REPORT</Text>
           </View>
 
           <View style={styles.metricsGrid}>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>REQUIRED PERIODS</Text>
-              <Text style={styles.cellValue}>35 Periods</Text>
+              <Text style={styles.cellValue}>
+                {hasTimetable ? `${timetableVersion.totalRequiredPeriods || 0} Periods` : 'Not Available'}
+              </Text>
             </View>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>SCHEDULED PERIODS</Text>
-              <Text style={[styles.cellValue, { color: '#059669' }]}>35 Periods (100%)</Text>
+              <Text style={[styles.cellValue, hasTimetable && { color: '#059669' }]}>
+                {hasTimetable ? `${timetableVersion.totalScheduledPeriods || 0} Periods` : '0'}
+              </Text>
             </View>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>FREE / UNMET SLOTS</Text>
-              <Text style={styles.cellValue}>0 Slots</Text>
+              <Text style={styles.cellValue}>
+                {hasTimetable ? `${timetableVersion.freePeriods ?? 0} Slots` : 'Not Evaluated'}
+              </Text>
             </View>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>FACULTY CLASHES</Text>
-              <Text style={[styles.cellValue, { color: '#059669' }]}>0 Conflicts</Text>
+              <Text style={[styles.cellValue, hasTimetable && (timetableVersion.hardConflicts === 0 ? { color: '#059669' } : { color: '#DC2626' })]}>
+                {hasTimetable ? `${timetableVersion.hardConflicts ?? 0} Conflicts` : 'Not Evaluated'}
+              </Text>
             </View>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>LAB 4P BLOCKS</Text>
-              <Text style={styles.cellValue}>2 Spans Verified</Text>
+              <Text style={styles.cellValue}>
+                {hasTimetable ? (timetableVersion.hardConflicts === 0 ? 'Verified' : 'Conflicts') : 'Not Ready'}
+              </Text>
             </View>
             <View style={styles.metricCell}>
               <Text style={styles.cellLabel}>MAX DAILY LOAD</Text>
-              <Text style={styles.cellValue}>Strict 4P Pass</Text>
+              <Text style={styles.cellValue}>
+                {hasTimetable ? (timetableVersion.hardConflicts === 0 ? 'Compliant' : 'Review Required') : 'Not Ready'}
+              </Text>
             </View>
           </View>
         </View>
@@ -219,7 +249,7 @@ export default function HODApprovalScreen() {
               <MaterialIcons name="verified" size={42} color="#059669" />
               <Text style={styles.sealTitle}>STATUTORY SEAL APPLIED</Text>
               <Text style={styles.sealSub}>
-                Ratified by Dr. S. Karthik, M.E., Ph.D. • Head of Department
+                Ratified by {hodProfile?.name || 'Head of Department'} • {hodProfile?.role || 'Head of Department'}
               </Text>
             </View>
 

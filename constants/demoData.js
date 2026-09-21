@@ -167,36 +167,10 @@ export const DEFAULT_AC_PROFILE = {
   assignedSections: ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'],
 };
 
-export const DEFAULT_HOD_PROFILE = {
-  id: 'CSE-HOD-001',
-  name: 'Dr. S. Karthik, M.E., Ph.D.',
-  initials: 'SK',
-  designation: 'Professor & Head of Department',
-  department: 'Dept. of Computer Science & Engg.',
-  shortDept: 'CSE',
-  email: 'hod.cse@nandhaengg.org',
-  academicYear: 'AY 2024-25 Odd',
-  semester: 'All Semesters (I - VIII)',
-  regulation: 'Autonomous Regulation R2022',
-  status: 'Executive Authority Active',
-  role: 'Head of Department (L1 Authority)',
-  cabin: 'HOD Secretariat, CSE Main Block, Ground Floor',
-  phone: '+91 98422 12345 / ext 201',
-  clearanceLevel: 'LEVEL 01 • STATUTORY EXECUTIVE',
-};
-
-export const AVAILABLE_FACULTY_CANDIDATES = [
-  { id: 'CSE-FAC-014', name: 'Dr. K. Senthil Kumar', designation: 'Associate Professor', experience: '14 Yrs', maxLoad: 16, currentLoad: 12 },
-  { id: 'CSE-FAC-021', name: 'Dr. M. Kavitha', designation: 'Associate Professor', experience: '12 Yrs', maxLoad: 16, currentLoad: 10 },
-  { id: 'CSE-FAC-042', name: 'Ms. C. Navamani', designation: 'Assistant Professor', experience: '8 Yrs', maxLoad: 16, currentLoad: 14 },
-  { id: 'CSE-FAC-038', name: 'Mr. P. Vignesh', designation: 'Assistant Professor', experience: '6 Yrs', maxLoad: 16, currentLoad: 8 },
-  { id: 'CSE-FAC-009', name: 'Dr. T. Rajesh', designation: 'Professor', experience: '18 Yrs', maxLoad: 14, currentLoad: 6 },
-  { id: 'CSE-FAC-055', name: 'Mrs. S. Deepa', designation: 'Assistant Professor', experience: '5 Yrs', maxLoad: 16, currentLoad: 11 },
-];
-
-export let FACULTY_PROFILE = DEFAULT_FACULTY_PROFILE;
-export let AC_PROFILE = DEFAULT_AC_PROFILE;
-export let HOD_PROFILE = DEFAULT_HOD_PROFILE;
+export let FACULTY_PROFILE = { ...DEFAULT_FACULTY_PROFILE };
+export let AC_PROFILE = { ...DEFAULT_AC_PROFILE };
+export let AVAILABLE_FACULTY_CANDIDATES = [];
+export let HOD_PROFILE = null;
 export let AC_FACULTY_LIST = [];
 export let ASSIGNED_COURSES = [];
 export let NOTIFICATIONS_DATA = [];
@@ -319,26 +293,38 @@ export function setCoordinatorProfile(profile) {
   return currentCoordinatorProfile;
 }
 
-// HOD Profile Services
+// HOD Profile Services (Starts null by default)
 let currentHODProfile = null;
 export function getHODProfile() {
-  return currentHODProfile ? { ...currentHODProfile } : { ...DEFAULT_HOD_PROFILE };
+  return currentHODProfile ? { ...currentHODProfile } : null;
 }
 
 export function setHODProfile(profile) {
   currentHODProfile = profile ? { ...profile } : null;
-  HOD_PROFILE = currentHODProfile || DEFAULT_HOD_PROFILE;
+  HOD_PROFILE = currentHODProfile;
   notifyStateSubscribers();
   return currentHODProfile;
 }
 
-// Class Advisor Assignment State (HOD Sole Authority)
-let currentClassAdvisors = {
-  'CSE-A': { facultyId: 'CSE-FAC-014', facultyName: 'Dr. K. Senthil Kumar', designation: 'Associate Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
-  'CSE-B': { facultyId: 'CSE-FAC-021', facultyName: 'Dr. M. Kavitha', designation: 'Associate Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
-  'CSE-C': { facultyId: 'CSE-FAC-042', facultyName: 'Ms. C. Navamani', designation: 'Assistant Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
-  'CSE-D': { facultyId: 'CSE-FAC-038', facultyName: 'Mr. P. Vignesh', designation: 'Assistant Professor', appointedAt: '2024-06-15', status: 'CONFIRMED' },
-};
+export function clearHODProfile() {
+  currentHODProfile = null;
+  HOD_PROFILE = null;
+  notifyStateSubscribers();
+}
+
+// Available Faculty Candidates for HOD Workflows (Starts empty)
+export function getAvailableFacultyCandidates() {
+  return [...AVAILABLE_FACULTY_CANDIDATES];
+}
+
+export function setAvailableFacultyCandidates(candidates = []) {
+  AVAILABLE_FACULTY_CANDIDATES = candidates.map((c) => ({ ...c }));
+  notifyStateSubscribers();
+  return AVAILABLE_FACULTY_CANDIDATES;
+}
+
+// Class Advisor Assignment State (HOD Sole Authority - Starts empty)
+let currentClassAdvisors = {};
 
 export function getClassAdvisors() {
   return { ...currentClassAdvisors };
@@ -357,7 +343,12 @@ export function setClassAdvisor(section, advisorData) {
   return currentClassAdvisors;
 }
 
-// HOD Faculty Allocations (Binding L1 Decision)
+export function clearClassAdvisors() {
+  currentClassAdvisors = {};
+  notifyStateSubscribers();
+}
+
+// HOD Faculty Allocations (Binding L1 Decision - Starts empty)
 let currentHODFacultyAllocations = {};
 
 export function getHODFacultyAllocations() {
@@ -373,51 +364,33 @@ export function setHODFacultyAllocation(courseCode, allocation) {
   return currentHODFacultyAllocations;
 }
 
-// HOD Notifications
-let currentHODNotifications = [
-  {
-    id: 'HOD-NOTIF-001',
-    type: 'TIMETABLE_REVIEW',
-    priority: 'HIGH',
-    title: 'Timetable Ready for Statutory Ratification',
-    message: 'Academic Coordinator submitted CSE-C (Sem V) timetable draft. 35/35 periods scheduled with 0 hard conflicts.',
-    timestamp: '10 mins ago',
-    read: false,
-    route: '/hod/timetable-review',
-    badge: 'Ratification Required',
-  },
-  {
-    id: 'HOD-NOTIF-002',
-    type: 'CLASS_ADVISOR',
-    priority: 'MEDIUM',
-    title: 'Class Advisor Confirmation Confirmed',
-    message: 'Ms. C. Navamani designated as Class Advisor for III Year CSE-C under Autonomous R2022 regulation.',
-    timestamp: '2 hours ago',
-    read: true,
-    route: '/hod/class-advisor',
-    badge: 'Advisor Appointed',
-  },
-  {
-    id: 'HOD-NOTIF-003',
-    type: 'FACULTY_ALLOCATION',
-    priority: 'HIGH',
-    title: 'Pending Faculty Allocation Decision',
-    message: 'Course 22CSC14 (Compiler Design) has 2 eligible subject handlers submitted by AC. Executive allocation pending.',
-    timestamp: '5 hours ago',
-    read: false,
-    route: '/hod/faculty-allocation',
-    badge: 'Allocation Pending',
-  },
-];
+export function clearHODFacultyAllocations() {
+  currentHODFacultyAllocations = {};
+  notifyStateSubscribers();
+}
+
+// HOD Notifications (Starts empty)
+let currentHODNotifications = [];
 
 export function getHODNotifications() {
   return [...currentHODNotifications];
+}
+
+export function addHODNotification(notif) {
+  currentHODNotifications = [notif, ...currentHODNotifications];
+  notifyStateSubscribers();
+  return currentHODNotifications;
 }
 
 export function markHODNotificationRead(id) {
   currentHODNotifications = currentHODNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
   notifyStateSubscribers();
   return currentHODNotifications;
+}
+
+export function clearHODNotifications() {
+  currentHODNotifications = [];
+  notifyStateSubscribers();
 }
 
 // Notifications

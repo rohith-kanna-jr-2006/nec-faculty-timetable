@@ -108,49 +108,59 @@ export default function HODNotificationsScreen() {
 
         {/* Notification Cards List */}
         <View style={styles.notifList}>
-          {filteredNotifications.map((notif) => {
-            const isUnread = !notif.read;
+          {filteredNotifications.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <MaterialIcons name="notifications-none" size={36} color={Colors.outlineVariant} />
+              <Text style={styles.emptyTitle}>No Notifications</Text>
+              <Text style={styles.emptySub}>
+                There are no pending alerts or governance actions for this category.
+              </Text>
+            </View>
+          ) : (
+            filteredNotifications.map((notif) => {
+              const isUnread = !notif.read;
 
-            return (
-              <Pressable
-                key={notif.id}
-                style={[styles.notifCard, isUnread && styles.notifCardUnread]}
-                onPress={() => handleNotificationPress(notif)}
-              >
-                <View style={styles.cardTop}>
-                  <View style={styles.badgeRow}>
-                    <View
-                      style={[
-                        styles.typeBadge,
-                        notif.priority === 'HIGH' ? styles.badgeRed : styles.badgeBlue,
-                      ]}
-                    >
-                      <Text
+              return (
+                <Pressable
+                  key={notif.id}
+                  style={[styles.notifCard, isUnread && styles.notifCardUnread]}
+                  onPress={() => handleNotificationPress(notif)}
+                >
+                  <View style={styles.cardTop}>
+                    <View style={styles.badgeRow}>
+                      <View
                         style={[
-                          styles.typeBadgeText,
-                          notif.priority === 'HIGH' ? styles.badgeRedText : styles.badgeBlueText,
+                          styles.typeBadge,
+                          notif.priority === 'HIGH' ? styles.badgeRed : styles.badgeBlue,
                         ]}
                       >
-                        {notif.badge}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.typeBadgeText,
+                            notif.priority === 'HIGH' ? styles.badgeRedText : styles.badgeBlueText,
+                          ]}
+                        >
+                          {notif.badge}
+                        </Text>
+                      </View>
+                      <Text style={styles.timeText}>{notif.timestamp}</Text>
                     </View>
-                    <Text style={styles.timeText}>{notif.timestamp}</Text>
+                    {isUnread && <View style={styles.unreadIndicator} />}
                   </View>
-                  {isUnread && <View style={styles.unreadIndicator} />}
-                </View>
 
-                <Text style={[styles.notifTitle, isUnread && styles.notifTitleUnread]}>
-                  {notif.title}
-                </Text>
-                <Text style={styles.notifMessage}>{notif.message}</Text>
+                  <Text style={[styles.notifTitle, isUnread && styles.notifTitleUnread]}>
+                    {notif.title}
+                  </Text>
+                  <Text style={styles.notifMessage}>{notif.message}</Text>
 
-                <View style={styles.actionPromptRow}>
-                  <Text style={styles.actionPromptText}>Tap to review & take action</Text>
-                  <MaterialIcons name="arrow-forward" size={14} color="#0284C7" />
-                </View>
-              </Pressable>
-            );
-          })}
+                  <View style={styles.actionPromptRow}>
+                    <Text style={styles.actionPromptText}>Tap to review & take action</Text>
+                    <MaterialIcons name="arrow-forward" size={14} color="#0284C7" />
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
         </View>
       </ScrollView>
 
@@ -343,5 +353,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#0284C7',
     fontWeight: '700',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.card,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginVertical: Spacing.md,
+  },
+  emptyTitle: {
+    ...Typography.titleMedium,
+    color: Colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

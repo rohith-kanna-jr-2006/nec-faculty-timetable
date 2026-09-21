@@ -40,24 +40,36 @@ export default function HODProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Executive Banner Card */}
-        <View style={styles.profileHeroCard}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarLargeText}>{profile?.initials || 'SK'}</Text>
-          </View>
+        {profile ? (
+          <View style={styles.profileHeroCard}>
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarLargeText}>{profile.initials || 'HD'}</Text>
+            </View>
 
-          <View style={styles.clearanceTag}>
-            <MaterialIcons name="security" size={13} color="#38BDF8" />
-            <Text style={styles.clearanceTagText}>LEVEL 01 STATUTORY EXECUTIVE</Text>
-          </View>
+            <View style={styles.clearanceTag}>
+              <MaterialIcons name="security" size={13} color="#38BDF8" />
+              <Text style={styles.clearanceTagText}>{profile.clearanceLevel || 'LEVEL 01 STATUTORY EXECUTIVE'}</Text>
+            </View>
 
-          <Text style={styles.profileName}>{profile?.name || 'Dr. S. Karthik, M.E., Ph.D.'}</Text>
-          <Text style={styles.profileDesignation}>
-            {profile?.designation || 'Professor & Head of Department'}
-          </Text>
-          <Text style={styles.profileDept}>
-            {profile?.department || 'Dept. of Computer Science & Engg.'}
-          </Text>
-        </View>
+            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileDesignation}>{profile.designation || 'Head of Department'}</Text>
+            <Text style={styles.profileDept}>{profile.department || 'Department of Computer Science & Engineering'}</Text>
+          </View>
+        ) : (
+          <View style={styles.unauthCard}>
+            <MaterialIcons name="person-outline" size={48} color={Colors.onSurfaceVariant} />
+            <Text style={styles.unauthTitle}>No HOD Profile Available</Text>
+            <Text style={styles.unauthSub}>
+              No authenticated executive session detected. Authenticate with institutional credentials to view mandate details.
+            </Text>
+            <Pressable
+              style={styles.signInRedirectBtn}
+              onPress={() => router.push('/hod/login')}
+            >
+              <Text style={styles.signInRedirectText}>Authenticate as HOD</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Statutory Governance Details */}
         <View style={styles.sectionCard}>
@@ -336,5 +348,42 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: Colors.outlineVariant,
     marginTop: 2,
+  },
+  unauthCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    marginBottom: Spacing.md,
+    ...Shadows.sm,
+  },
+  unauthTitle: {
+    ...Typography.titleMedium,
+    color: '#0F2942',
+    fontWeight: '800',
+    fontSize: 16,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  unauthSub: {
+    ...Typography.bodySmall,
+    color: Colors.onSurfaceVariant,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 14,
+  },
+  signInRedirectBtn: {
+    backgroundColor: '#0F2942',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.md,
+  },
+  signInRedirectText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

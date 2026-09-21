@@ -19,6 +19,8 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(faculty)" options={{ animation: 'fade' }} />
         <Stack.Screen name="coordinator" options={{ animation: 'fade' }} />
+        <Stack.Screen name="hod" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="workload" options={{ animation: 'slide_from_right' }} />
       </Stack>
     </SafeAreaProvider>
   );

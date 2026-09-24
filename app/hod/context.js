@@ -70,7 +70,8 @@ export default function AcademicContextScreen() {
       year: selectedYear,
       semester: selectedSemester,
       section: selectedSection,
-      academicYear: currentContext.academicYear || 'Academic Year AY-2024-25',
+      academicYear: currentContext.academicYear || 'AY 2024-25',
+      regulation: currentContext.regulation || 'Autonomous Regulation R2022',
     });
 
     if (nextRoute) {

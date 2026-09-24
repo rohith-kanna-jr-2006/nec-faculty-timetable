@@ -192,6 +192,35 @@ assert(
 );
 assert(validResult.totalRequiredPeriods === 8, 'Total required periods calculated accurately (8 periods)');
 
+// Rule D: Authoritative Semester V 12-Course 35-Period Completeness Check
+const { getRegulationSubjects } = require('../services/regulationCurriculumService.js');
+const sem5Courses = getRegulationSubjects({
+  regulation: 'R2022',
+  semester: 'Sem V',
+  department: 'CSE',
+  year: 'III Year',
+  section: 'CSE-C',
+});
+const sem5Allocations = {};
+sem5Courses.forEach((c) => {
+  if (c.category === 'LAB' || c.allocationRule === 'PRIMARY_PLUS_ADDITIONAL') {
+    sem5Allocations[c.code] = { primaryFaculty: 'Fac 1', additionalFaculty: ['Fac 2'] };
+  } else if (c.allocationRule === 'MINIMUM_TWO' || c.category === 'SAS') {
+    sem5Allocations[c.code] = { faculty: ['Fac 1', 'Fac 2'] };
+  } else if (c.allocationRule === 'STAFFS_HANDLED') {
+    sem5Allocations[c.code] = { faculty: ['Fac 1'], staffCount: 1 };
+  } else {
+    sem5Allocations[c.code] = { faculty: 'Fac 1' };
+  }
+});
+const sem5Validation = validateFacultyAllocations(sem5Allocations, sem5Courses);
+assert(
+  sem5Validation.valid === true &&
+    sem5Validation.totalRequiredPeriods === 35 &&
+    sem5Validation.scheduledPeriods === 35,
+  'Authoritative Semester V curriculum requires exactly 35 weekly periods (100% schedule grid completeness)'
+);
+
 // ------------------------------------------------------------
 // Test Group 4: HOD Approval Workflow State Machine
 // ------------------------------------------------------------

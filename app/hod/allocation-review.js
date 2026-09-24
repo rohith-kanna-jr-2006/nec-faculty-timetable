@@ -16,16 +16,48 @@ import PrimaryButton from '../../components/PrimaryButton';
 import {
   getAcademicContext,
   getHODFacultyAllocations,
-  getCurriculumCourses,
   getCourseFacultyHandlers,
 } from '../../constants/demoData';
+import {
+  getRegulationSubjects,
+  normalizeRegulationKey,
+  normalizeSemester,
+  normalizeYear,
+} from '../../services/regulationCurriculumService';
+import {
+  getInstitutionalAllocationTypes,
+  getInstitutionalAllocations,
+  getInstitutionalKey,
+} from '../../services/institutionalAllocationService';
 
 export default function AllocationReviewScreen() {
   const router = useRouter();
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
-  const allocations = getHODFacultyAllocations();
-  const courses = getCurriculumCourses();
+  const normSem = normalizeSemester(context.semester || 'Sem V');
+  const normYr = normalizeYear(context.year || 'III Year');
+  const normReg = normalizeRegulationKey(context.regulation || 'R2022');
+  const activeDept = String(context.department || 'CSE').toUpperCase();
+  const activeAY = context.academicYear || 'AY 2024-25';
+
+  const resolvedContext = {
+    ...context,
+    academicYear: activeAY,
+    regulation: normReg,
+    department: activeDept,
+    year: normYr,
+    semester: normSem,
+    section: activeSection,
+  };
+
+  const allocations = getHODFacultyAllocations(resolvedContext);
+  const courses = getRegulationSubjects(resolvedContext);
+
+  const institutionalAllocations = getInstitutionalAllocations({
+    section: activeSection,
+    academicYear: activeAY,
+  });
+  const institutionalTypes = getInstitutionalAllocationTypes();
 
   const auditRows = courses.map((c) => {
     const handlers = getCourseFacultyHandlers(c.code) || [];
@@ -42,9 +74,26 @@ export default function AllocationReviewScreen() {
     };
   });
 
-  const totalPeriods = auditRows.reduce((sum, r) => sum + r.periods, 0);
-  const assignedCount = auditRows.filter((r) => r.status === 'Assigned').length;
-  const needsReviewCount = auditRows.filter((r) => r.status === 'Needs Review' || r.status === 'Pending').length;
+  const institutionalRows = institutionalTypes.map((t) => {
+    const key = getInstitutionalKey(t.typeId, activeSection, activeAY);
+    const assigned = institutionalAllocations[key];
+    return {
+      typeId: t.typeId,
+      name: t.name,
+      shortCode: t.shortCode,
+      section: activeSection,
+      periods: t.defaultHours || 1,
+      hodAssigned: assigned?.facultyName || 'Pending Allocation',
+      status: assigned ? 'Assigned' : 'Needs Review',
+    };
+  });
+
+  const totalCurriculumPeriods = auditRows.reduce((sum, r) => sum + r.periods, 0);
+  const assignedCurriculumCount = auditRows.filter((r) => r.status === 'Assigned').length;
+  const needsReviewCurriculumCount = auditRows.filter((r) => r.status === 'Needs Review' || r.status === 'Pending').length;
+
+  const assignedInstCount = institutionalRows.filter((r) => r.status === 'Assigned').length;
+  const totalInstPeriods = institutionalRows.reduce((sum, r) => sum + r.periods, 0);
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>
@@ -76,18 +125,23 @@ export default function AllocationReviewScreen() {
           {/* Mini Stats Bar */}
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>{assignedCount}/{auditRows.length}</Text>
-              <Text style={styles.statLabel}>Assigned</Text>
+              <Text style={styles.statVal}>{assignedCurriculumCount}/{auditRows.length}</Text>
+              <Text style={styles.statLabel}>Courses</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>{totalPeriods} P</Text>
+              <Text style={styles.statVal}>{totalCurriculumPeriods} P</Text>
               <Text style={styles.statLabel}>Weekly Load</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={[styles.statVal, { color: needsReviewCount > 0 ? '#FBBF24' : '#34D399' }]}>
-                {needsReviewCount}
+              <Text style={styles.statVal}>{assignedInstCount}/{institutionalRows.length}</Text>
+              <Text style={styles.statLabel}>Inst Roles</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statVal, { color: needsReviewCurriculumCount > 0 ? '#FBBF24' : '#34D399' }]}>
+                {needsReviewCurriculumCount}
               </Text>
               <Text style={styles.statLabel}>Need Review</Text>
             </View>
@@ -176,6 +230,64 @@ export default function AllocationReviewScreen() {
                 </View>
               ))
             )}
+          </View>
+        </View>
+
+        {/* Statutory Institutional Roles Audit Roster */}
+        <View style={[styles.tableCard, { marginTop: Spacing.md }]}>
+          <Text style={styles.tableHeader}>STATUTORY INSTITUTIONAL ROLES (HOD DIRECT • 3 ROLES)</Text>
+          <View style={styles.tableList}>
+            {institutionalRows.map((row) => (
+              <View key={row.typeId} style={styles.rowCard}>
+                <View style={styles.rowTop}>
+                  <View style={styles.rowCodeBox}>
+                    <Text style={styles.rowCode}>{row.shortCode}</Text>
+                    <Text style={styles.rowName}>{row.name}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      row.status === 'Assigned' ? styles.statusAssigned : styles.statusReview,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusBadgeText,
+                        row.status === 'Assigned' ? styles.statusAssignedText : styles.statusReviewText,
+                      ]}
+                    >
+                      {row.status}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Direct Assignment Info */}
+                <View style={styles.compareGrid}>
+                  <View style={styles.compareCol}>
+                    <Text style={styles.compareLabel}>GOVERNANCE AUTHORITY</Text>
+                    <Text style={styles.acInputText}>HOD Direct Assignment</Text>
+                  </View>
+                  <View style={styles.compareCol}>
+                    <Text style={styles.compareLabel}>HOD ASSIGNED FACULTY</Text>
+                    <Text style={styles.hodAssignedText}>{row.hodAssigned}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.rowFooter}>
+                  <Text style={styles.rowMetaText}>
+                    Section {row.section} • {row.periods} Statutory Period/Wk (Administrative Duty)
+                  </Text>
+                  {row.status !== 'Assigned' && (
+                    <Pressable
+                      onPress={() => router.push('/hod/faculty-allocation')}
+                      style={styles.fixBtn}
+                    >
+                      <Text style={styles.fixBtnText}>Assign Role</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 

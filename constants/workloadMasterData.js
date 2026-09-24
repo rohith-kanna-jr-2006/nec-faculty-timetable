@@ -2262,3 +2262,27 @@ export function searchAndFilterWorkload({
 }
 
 export const FACULTY_WORKLOAD_SOURCE = FACULTY_WORKLOAD_MASTER;
+
+/**
+ * Authoritative CSE Faculty Directory for HOD Workflows.
+ * Derived from FACULTY_WORKLOAD_MASTER.
+ * Excludes non-CSE faculty:
+ * - Dr. R. Praveenkumar — ASP / ECE (FWL-26)
+ * - Ms. B. Preethi — AP / ECE (FWL-27)
+ * - Mr. P. Jaishankar — AP / Maths (FWL-28)
+ *
+ * Preserves exact source values: facultyId, facultyName, designation.
+ * Exposes calculated workload totals: calculatedTeachingHours, calculatedResponsibilityHours, calculatedTotalHours, status.
+ * Leaves raw FACULTY_WORKLOAD_MASTER completely untouched.
+ */
+export function getCSEFacultyFromWorkload() {
+  const NON_CSE_IDS = new Set(['FWL-26', 'FWL-27', 'FWL-28']);
+  const NON_CSE_DESIGNATIONS = ['ASP / ECE', 'AP / ECE', 'AP / Maths'];
+
+  return getWorkloadMaster().filter((faculty) => {
+    if (NON_CSE_IDS.has(faculty.facultyId)) return false;
+    if (NON_CSE_DESIGNATIONS.includes(faculty.designation)) return false;
+    return true;
+  });
+}
+

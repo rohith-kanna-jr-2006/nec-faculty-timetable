@@ -16,16 +16,16 @@ import PrimaryButton from '../../components/PrimaryButton';
 import {
   getAcademicContext,
   getHODFacultyAllocations,
-  getCurriculumCourses,
   getCourseFacultyHandlers,
 } from '../../constants/demoData';
+import { getRegulationSubjects } from '../../services/regulationCurriculumService';
 
 export default function CourseFacultyInputScreen() {
   const router = useRouter();
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
-  const allocations = getHODFacultyAllocations();
-  const courses = getCurriculumCourses();
+  const allocations = getHODFacultyAllocations(context);
+  const courses = getRegulationSubjects(context);
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>

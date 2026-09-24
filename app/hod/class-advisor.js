@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,50 +18,94 @@ import {
   getAcademicContext,
   getClassAdvisors,
   setClassAdvisor,
-  getAvailableFacultyCandidates,
+  subscribeState,
 } from '../../constants/demoData';
+import { getCSEFacultyFromWorkload } from '../../constants/workloadMasterData';
 
 export default function ClassAdvisorScreen() {
   const router = useRouter();
   const context = getAcademicContext();
   const activeSection = context.section || 'CSE-C';
-  const advisors = getClassAdvisors();
+  const [advisors, setAdvisors] = useState(getClassAdvisors());
   const currentAdvisor = advisors[activeSection];
-  const candidates = getAvailableFacultyCandidates();
+  const candidates = getCSEFacultyFromWorkload();
 
   const [selectedFacultyId, setSelectedFacultyId] = useState(
-    currentAdvisor?.facultyId || (candidates.length > 0 ? candidates[0].id : null)
+    currentAdvisor?.facultyId || (candidates.length > 0 ? candidates[0].facultyId : null)
   );
   const [isSuccessNotice, setIsSuccessNotice] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState(null);
+  const [noticeType, setNoticeType] = useState(null);
 
-  const selectedCandidate = candidates.find((f) => f.id === selectedFacultyId);
+  useEffect(() => {
+    const unsubscribe = subscribeState(() => {
+      setAdvisors(getClassAdvisors());
+    });
+    return unsubscribe;
+  }, []);
+
+  const selectedCandidate = candidates.find((f) => f.facultyId === selectedFacultyId);
 
   const handleConfirmAssignment = () => {
+    setNoticeMessage(null);
+    setNoticeType(null);
+
     if (!selectedCandidate) {
-      Alert.alert('No Selection', 'Please select a faculty candidate to appoint as Class Advisor.');
+      setNoticeType('error');
+      setNoticeMessage('Please select an eligible CSE faculty candidate to appoint as Class Advisor.');
+      Alert.alert('No Selection', 'Please select an eligible CSE faculty candidate to appoint as Class Advisor.');
       return;
     }
 
-    setClassAdvisor(activeSection, {
-      facultyId: selectedCandidate.id,
-      facultyName: selectedCandidate.name,
+    // Class Advisor cross-section conflict check
+    const currentAdvisorsMap = getClassAdvisors();
+    const conflictingEntry = Object.entries(currentAdvisorsMap).find(
+      ([secKey, adv]) => secKey !== activeSection && adv?.facultyId === selectedCandidate.facultyId
+    );
+
+    if (conflictingEntry) {
+      const [conflictingSection] = conflictingEntry;
+      const msg = `${selectedCandidate.facultyName} (${selectedCandidate.facultyId}) is already assigned as Class Advisor for ${conflictingSection}.\n\nA faculty member cannot be appointed as Class Advisor to multiple sections concurrently.\n\nPlease select another candidate.`;
+      setNoticeType('error');
+      setNoticeMessage(msg);
+      Alert.alert('Class Advisor Conflict', msg, [{ text: 'Acknowledge', style: 'cancel' }]);
+      return;
+    }
+
+    const workloadDisplay =
+      selectedCandidate.status === 'INCOMPLETE SOURCE DATA'
+        ? 'Incomplete source data'
+        : `Teaching: ${selectedCandidate.calculatedTeachingHours}h, Resp: ${selectedCandidate.calculatedResponsibilityHours}h, Total: ${selectedCandidate.calculatedTotalHours}h`;
+
+    const updated = setClassAdvisor(activeSection, {
+      facultyId: selectedCandidate.facultyId,
+      facultyName: selectedCandidate.facultyName,
       designation: selectedCandidate.designation,
-      workload: `${selectedCandidate.currentLoad || 0}/${selectedCandidate.maxLoad || 16}`,
+      workload: workloadDisplay,
+      teachingHours: selectedCandidate.calculatedTeachingHours,
+      responsibilityHours: selectedCandidate.calculatedResponsibilityHours,
+      totalHours: selectedCandidate.calculatedTotalHours,
+      status: selectedCandidate.status,
       appointedAt: new Date().toISOString().split('T')[0],
     });
 
+    setAdvisors({ ...updated });
     setIsSuccessNotice(true);
+    setNoticeType('success');
+    setNoticeMessage(`${selectedCandidate.facultyName} has been formally confirmed as the Class Advisor for ${activeSection}.`);
+
     setTimeout(() => {
       setIsSuccessNotice(false);
-      Alert.alert(
-        'Class Advisor Appointed',
-        `${selectedCandidate.name} has been formally confirmed as the Class Advisor for ${activeSection} under HOD Level 01 Executive Authority.`,
-        [
-          { text: 'Review AC Faculty Input', onPress: () => router.push('/hod/faculty-input') },
-          { text: 'Stay Here', style: 'cancel' },
-        ]
-      );
-    }, 400);
+    }, 5000);
+
+    Alert.alert(
+      'Class Advisor Appointed',
+      `${selectedCandidate.facultyName} has been formally confirmed as the Class Advisor for ${activeSection} under HOD Level 01 Executive Authority.`,
+      [
+        { text: 'Review Faculty Allocation', onPress: () => router.push('/hod/faculty-allocation') },
+        { text: 'Stay Here', style: 'cancel' },
+      ]
+    );
   };
 
   return (
@@ -142,11 +186,11 @@ export default function ClassAdvisorScreen() {
         {/* Eligible Faculty Roster */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>AVAILABLE ELIGIBLE FACULTY POOL</Text>
-            <Text style={styles.poolCountText}>{candidates.length} Faculty</Text>
+            <Text style={styles.cardLabel}>AVAILABLE ELIGIBLE CSE FACULTY POOL</Text>
+            <Text style={styles.poolCountText}>{candidates.length} CSE Faculty</Text>
           </View>
           <Text style={styles.helperText}>
-            Select a candidate below to ratify as Class Advisor for {activeSection}:
+            Select a CSE faculty candidate from the Faculty Workload Master to appoint as Class Advisor for {activeSection}:
           </Text>
 
           {candidates.length === 0 ? (
@@ -154,20 +198,24 @@ export default function ClassAdvisorScreen() {
               <MaterialIcons name="people-outline" size={28} color={Colors.outlineVariant} />
               <Text style={styles.emptyCandidatesTitle}>No faculty available</Text>
               <Text style={styles.emptyCandidatesSub}>
-                No faculty candidate records are loaded in the current runtime pool.
+                No CSE faculty records are loaded from the Workload Master.
               </Text>
             </View>
           ) : (
             <View style={styles.candidateList}>
               {candidates.map((faculty) => {
-                const isSelected = selectedFacultyId === faculty.id;
-                const isCurrentlyActiveAdvisor = currentAdvisor?.facultyId === faculty.id;
+                const isSelected = selectedFacultyId === faculty.facultyId;
+                const isCurrentlyActiveAdvisor = currentAdvisor?.facultyId === faculty.facultyId;
+                const conflictingSection = Object.keys(advisors).find(
+                  (secKey) => secKey !== activeSection && advisors[secKey]?.facultyId === faculty.facultyId
+                );
+                const isIncomplete = faculty.status === 'INCOMPLETE SOURCE DATA';
 
                 return (
                   <Pressable
-                    key={faculty.id}
+                    key={faculty.facultyId}
                     style={[styles.candidateItem, isSelected && styles.candidateItemActive]}
-                    onPress={() => setSelectedFacultyId(faculty.id)}
+                    onPress={() => setSelectedFacultyId(faculty.facultyId)}
                   >
                     <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
                       {isSelected && <View style={styles.radioDot} />}
@@ -176,32 +224,35 @@ export default function ClassAdvisorScreen() {
                     <View style={styles.candidateInfo}>
                       <View style={styles.candidateNameRow}>
                         <Text style={[styles.candidateName, isSelected && styles.candidateNameActive]}>
-                          {faculty.name}
+                          {faculty.facultyName}
                         </Text>
-                        {isCurrentlyActiveAdvisor && (
-                          <View style={styles.currentBadge}>
-                            <Text style={styles.currentBadgeText}>Current Advisor</Text>
-                          </View>
-                        )}
+                        <View style={styles.badgeRow}>
+                          {isCurrentlyActiveAdvisor && (
+                            <View style={styles.currentBadge}>
+                              <Text style={styles.currentBadgeText}>Current Advisor ({activeSection})</Text>
+                            </View>
+                          )}
+                          {conflictingSection && (
+                            <View style={styles.conflictBadge}>
+                              <Text style={styles.conflictBadgeText}>Advisor: {conflictingSection}</Text>
+                            </View>
+                          )}
+                          {isIncomplete && (
+                            <View style={styles.incompleteBadge}>
+                              <Text style={styles.incompleteBadgeText}>Incomplete Source</Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
                       <Text style={styles.candidateDesig}>
-                        {faculty.designation} • {faculty.experience} Experience
+                        {faculty.designation} • ID: {faculty.facultyId}
                       </Text>
-                      <View style={styles.workloadBarRow}>
-                        <Text style={styles.workloadLabel}>
-                          Matrix Load: {faculty.currentLoad}/{faculty.maxLoad} Periods
+                      <View style={styles.workloadInfoRow}>
+                        <Text style={styles.workloadInfoText}>
+                          {isIncomplete
+                            ? `Teaching: ${faculty.calculatedTeachingHours} hrs • Responsibilities: ${faculty.calculatedResponsibilityHours} hrs • Total: Incomplete`
+                            : `Teaching: ${faculty.calculatedTeachingHours} hrs • Responsibilities: ${faculty.calculatedResponsibilityHours} hrs • Total: ${faculty.calculatedTotalHours} hrs`}
                         </Text>
-                        <View style={styles.workloadTrack}>
-                          <View
-                            style={[
-                              styles.workloadFill,
-                              {
-                                width: `${Math.min(100, (faculty.currentLoad / faculty.maxLoad) * 100)}%`,
-                                backgroundColor: faculty.currentLoad >= 14 ? '#D97706' : '#2563EB',
-                              },
-                            ]}
-                          />
-                        </View>
                       </View>
                     </View>
                   </Pressable>
@@ -218,14 +269,38 @@ export default function ClassAdvisorScreen() {
             <Text style={styles.confirmTitle}>EXECUTIVE RATIFICATION</Text>
           </View>
           <Text style={styles.confirmDesc}>
-            Designating {selectedCandidate?.name || 'Selected Faculty'} as Class Advisor for {activeSection} takes immediate effect across the Academic Coordinator console and Faculty portal.
+            Designating {selectedCandidate?.facultyName || 'Selected Faculty'} as Class Advisor for {activeSection} takes immediate effect across the Academic Coordinator console and Faculty portal.
           </Text>
+
+          {noticeMessage && (
+            <View
+              style={[
+                styles.noticeBox,
+                noticeType === 'success' ? styles.noticeSuccess : styles.noticeError,
+              ]}
+            >
+              <MaterialIcons
+                name={noticeType === 'success' ? 'check-circle' : 'error-outline'}
+                size={16}
+                color={noticeType === 'success' ? '#059669' : '#DC2626'}
+              />
+              <Text
+                style={[
+                  styles.noticeText,
+                  noticeType === 'success' ? styles.noticeTextSuccess : styles.noticeTextError,
+                ]}
+              >
+                {noticeMessage}
+              </Text>
+            </View>
+          )}
 
           <PrimaryButton
             title="Ratify & Confirm Class Advisor"
             icon="verified"
             iconRight="arrow-forward"
             onPress={handleConfirmAssignment}
+            disabled={false}
             style={styles.confirmBtn}
           />
         </View>
@@ -471,25 +546,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
-  workloadBarRow: {
-    marginTop: 6,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
   },
-  workloadLabel: {
+  conflictBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  conflictBadgeText: {
+    color: '#D97706',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  incompleteBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  incompleteBadgeText: {
+    color: '#DC2626',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  workloadInfoRow: {
+    marginTop: 4,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  workloadInfoText: {
     ...Typography.labelSmall,
     color: Colors.onSurfaceVariant,
     fontSize: 10,
     fontWeight: '600',
-    marginBottom: 3,
-  },
-  workloadTrack: {
-    height: 4,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  workloadFill: {
-    height: '100%',
-    borderRadius: 2,
   },
   confirmBox: {
     backgroundColor: '#0F2942',
@@ -556,5 +652,35 @@ const styles = StyleSheet.create({
     color: Colors.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  noticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: BorderRadius.md,
+    marginBottom: 10,
+  },
+  noticeSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  noticeError: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  noticeText: {
+    ...Typography.bodySmall,
+    fontSize: 11,
+    fontWeight: '700',
+    flex: 1,
+  },
+  noticeTextSuccess: {
+    color: '#065F46',
+  },
+  noticeTextError: {
+    color: '#991B1B',
   },
 });

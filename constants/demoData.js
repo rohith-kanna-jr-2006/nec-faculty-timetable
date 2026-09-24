@@ -351,15 +351,135 @@ export function clearClassAdvisors() {
 // HOD Faculty Allocations (Binding L1 Decision - Starts empty)
 let currentHODFacultyAllocations = {};
 
-export function getHODFacultyAllocations() {
-  return { ...currentHODFacultyAllocations };
+function normSem(s) {
+  if (!s) return '';
+  const str = String(s).trim().toUpperCase();
+  if (str.includes('VIII') || str === '8') return 'Sem VIII';
+  if (str.includes('VII') || str === '7') return 'Sem VII';
+  if (str.includes('VI') || str === '6') return 'Sem VI';
+  if (str.includes('V') || str === '5') return 'Sem V';
+  if (str.includes('IV') || str === '4') return 'Sem IV';
+  if (str.includes('III') || str === '3') return 'Sem III';
+  if (str.includes('II') || str === '2') return 'Sem II';
+  if (str.includes('I') || str === '1') return 'Sem I';
+  return String(s).trim();
 }
 
-export function setHODFacultyAllocation(courseCode, allocation) {
+function normYr(y) {
+  if (!y) return '';
+  const str = String(y).trim().toUpperCase();
+  if (str.includes('IV') || str === '4') return 'IV Year';
+  if (str.includes('III') || str === '3') return 'III Year';
+  if (str.includes('II') || str === '2') return 'II Year';
+  if (str.includes('I') || str === '1') return 'I Year';
+  return String(y).trim();
+}
+
+function normReg(r) {
+  if (!r) return 'R2022';
+  const str = String(r).toUpperCase();
+  if (str.includes('2022')) return 'R2022';
+  if (str.includes('2026')) return 'R2026';
+  return str.trim();
+}
+
+/**
+ * Context-Aware Allocation Identity Key Generator
+ * Prevents one semester or section allocation from overwriting another.
+ */
+export function getHODAllocationKey(params = {}) {
+  const {
+    academicYear = 'AY 2024-25',
+    regulation = 'R2022',
+    department = 'CSE',
+    year = 'III Year',
+    semester = 'Sem V',
+    section = 'CSE-C',
+    courseCode = '',
+    allocationType = 'REGULAR',
+  } = params;
+
+  return `${academicYear}::${normReg(regulation)}::${department}::${normYr(year)}::${normSem(semester)}::${section}::${courseCode}::${allocationType}`;
+}
+
+export function getHODFacultyAllocations(contextFilter) {
+  if (!contextFilter || Object.keys(contextFilter).length === 0) {
+    return { ...currentHODFacultyAllocations };
+  }
+
+  const { academicYear, regulation, department, year, semester, section } = contextFilter;
+  const targetAY = academicYear ? String(academicYear).trim() : null;
+  const targetReg = regulation ? normReg(regulation) : null;
+  const targetDept = department ? String(department).toUpperCase().trim() : null;
+  const targetYr = year ? normYr(year) : null;
+  const targetSem = semester ? normSem(semester) : null;
+  const targetSec = section ? String(section).trim() : null;
+
+  const filtered = {};
+
+  Object.entries(currentHODFacultyAllocations).forEach(([key, alloc]) => {
+    if (!alloc || typeof alloc !== 'object') return;
+
+    // Filter by context fields
+    if (targetAY && alloc.academicYear && alloc.academicYear !== targetAY) return;
+    if (targetReg && alloc.regulation && normReg(alloc.regulation) !== targetReg) return;
+    if (targetDept && alloc.department && String(alloc.department).toUpperCase() !== targetDept) return;
+    if (targetYr && alloc.year && normYr(alloc.year) !== targetYr) return;
+    if (targetSem && alloc.semester && normSem(alloc.semester) !== targetSem) return;
+    if (targetSec && alloc.section && String(alloc.section).trim() !== targetSec) return;
+
+    const code = alloc.courseCode || alloc.code;
+    if (code) {
+      filtered[code] = alloc;
+    }
+    filtered[key] = alloc;
+  });
+
+  return filtered;
+}
+
+export function setHODFacultyAllocation(courseCodeOrKey, allocation = {}) {
+  const context = getAcademicContext();
+  const academicYear = allocation.academicYear || context.academicYear || 'AY 2024-25';
+  const regulation = normReg(allocation.regulation || context.regulation || 'R2022');
+  const department = String(allocation.department || context.department || 'CSE').toUpperCase();
+  const year = normYr(allocation.year || context.year || 'III Year');
+  const semester = normSem(allocation.semester || context.semester || 'Sem V');
+  const section = allocation.section || context.section || 'CSE-C';
+  const courseCode = allocation.courseCode || allocation.code || courseCodeOrKey;
+  const allocationType = allocation.allocationType || allocation.classification || 'REGULAR';
+
+  const compositeKey = getHODAllocationKey({
+    academicYear,
+    regulation,
+    department,
+    year,
+    semester,
+    section,
+    courseCode,
+    allocationType,
+  });
+
+  const enriched = {
+    ...allocation,
+    courseCode,
+    code: courseCode,
+    academicYear,
+    regulation,
+    department,
+    year,
+    semester,
+    section,
+    allocationType,
+    allocationKey: compositeKey,
+  };
+
   currentHODFacultyAllocations = {
     ...currentHODFacultyAllocations,
-    [courseCode]: allocation,
+    [compositeKey]: enriched,
+    [courseCode]: enriched,
   };
+
   notifyStateSubscribers();
   return currentHODFacultyAllocations;
 }
@@ -655,25 +775,51 @@ export function validateFacultyAllocations(allocations = currentFacultyAllocatio
     }
 
     if (rule === 'SINGLE_FACULTY' || course.category === 'THEORY' || course.category === 'ELECTIVE') {
-      if (!alloc.faculty) {
+      const fac = alloc.faculty || alloc.facultyName;
+      if (!fac) {
         errors.push(`Theory course ${course.code} must have exactly one faculty assigned.`);
+      } else if (Array.isArray(alloc.faculty) && alloc.faculty.length > 1) {
+        errors.push(`Theory course ${course.code} requires exactly one final faculty, got multiple.`);
       }
     } else if (rule === 'PRIMARY_PLUS_ADDITIONAL' || course.category === 'LAB') {
-      if (!alloc.primaryFaculty) {
+      const primary = alloc.primaryFaculty || alloc.primaryFacultyName;
+      const additional = alloc.additionalFaculty || alloc.additionalFacultyNames || [];
+      if (!primary) {
         errors.push(`Laboratory course ${course.code} missing primary theory-linked faculty.`);
       }
-      if (!alloc.additionalFaculty || alloc.additionalFaculty.length === 0) {
+      if (!additional || additional.length === 0) {
         errors.push(`Laboratory course ${course.code} requires at least one additional staff member.`);
       }
-    } else if (rule === 'MINIMUM_TWO' || course.category === 'SAS') {
-      if (!alloc.faculty || alloc.faculty.length < 2) {
+      // Duplicate faculty rejection between primary and additional
+      const primaryId = alloc.primaryFacultyId || (typeof primary === 'string' ? primary : primary?.facultyId);
+      const additionalIds = (alloc.additionalFacultyIds || additional).map((a) =>
+        typeof a === 'string' ? a : a?.facultyId || a?.name
+      );
+      if (primaryId && additionalIds.includes(primaryId)) {
+        errors.push(`Laboratory course ${course.code} has duplicate faculty: primary faculty cannot also be assigned as additional staff.`);
+      }
+    } else if (rule === 'MINIMUM_TWO' || course.category === 'SAS' || course.classification === 'NON_CREDIT') {
+      const facList = alloc.faculty || alloc.facultyNames || (alloc.faculty1 && alloc.faculty2 ? [alloc.faculty1, alloc.faculty2] : []);
+      const count = Array.isArray(facList) ? facList.filter(Boolean).length : (facList ? 1 : 0);
+      if (count < 2) {
         errors.push(`Soft/Analytical Skills course ${course.code} requires a minimum of two faculty handlers.`);
       }
-    } else if (rule === 'STAFFS_HANDLED' || course.category === 'OTHER') {
+      // Duplicate rejection
+      const idList = alloc.facultyIds || (Array.isArray(facList) ? facList.map((f) => (typeof f === 'string' ? f : f?.facultyId || f?.name)) : []);
+      if (Array.isArray(idList) && idList.length >= 2 && new Set(idList).size < idList.length) {
+        errors.push(`Soft/Analytical Skills course ${course.code} has duplicate faculty: minimum two distinct faculty required.`);
+      }
+    } else if (rule === 'STAFFS_HANDLED' || course.category === 'OTHER' || course.category === 'SPECIAL') {
       const required = alloc.staffCount || 1;
-      const count = (alloc.faculty || []).filter(Boolean).length;
-      if (count < required) {
-        errors.push(`Course ${course.code} requires ${required} staff member(s) in Staff's Handled mode.`);
+      const facList = alloc.faculty || alloc.facultyNames || (alloc.facultyName ? [alloc.facultyName] : []);
+      const normalizedList = Array.isArray(facList) ? facList.filter(Boolean) : [facList].filter(Boolean);
+      if (normalizedList.length < required) {
+        errors.push(`Course ${course.code} requires ${required} staff member(s) in Staff's Handled mode (got ${normalizedList.length}).`);
+      }
+      // Duplicate rejection
+      const idList = alloc.facultyIds || normalizedList.map((f) => (typeof f === 'string' ? f : f?.facultyId || f?.name));
+      if (Array.isArray(idList) && new Set(idList).size < idList.length) {
+        errors.push(`Course ${course.code} has duplicate faculty assigned across staff slots.`);
       }
     }
   });

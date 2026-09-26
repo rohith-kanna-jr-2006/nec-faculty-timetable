@@ -1,35 +1,23 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/layout/Topbar';
 import PageContainer from '../components/layout/PageContainer';
-import { clearAuthSession } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function FacultyLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    clearAuthSession();
-    navigate('/login');
-  };
+  const { user } = useAuth();
 
   return (
     <div className="app-shell">
       <Sidebar
-        role="FACULTY"
+        role={user?.role || 'FACULTY'}
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
       <div className="app-main-layout">
-        <Topbar
-          user={{
-            name: 'Dr. S. Karpusamy',
-            role: 'Associate Professor',
-            department: 'Computer Science and Engineering',
-          }}
-          onLogout={handleLogout}
-        />
+        <Topbar />
         <PageContainer>
           <Outlet />
         </PageContainer>

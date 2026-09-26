@@ -1,80 +1,143 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Card from '../../components/common/Card';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuth();
+  const { showToast } = useToast();
+
+  const isSessionExpired = searchParams.get('expired') === 'true';
+
   const [email, setEmail] = useState('faculty@nec.edu.in');
   const [password, setPassword] = useState('Password123!');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('FACULTY');
+  const [errorMessage, setErrorMessage] = useState(
+    isSessionExpired ? 'Your previous session has expired. Please sign in again.' : null
+  );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    if (!email || !password) {
+      setErrorMessage('Please enter both institutional email and password.');
+      return;
+    }
+
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const result = await login(email.trim(), password);
+      showToast(`Welcome back, ${result.user.name}!`, 'success');
+
+      // Determine redirect path: return to prior destination or role's default portal
+      const fromPath = location.state?.from?.pathname;
+      const targetPath = fromPath && fromPath !== '/login' ? fromPath : result.redirectPath;
+
+      navigate(targetPath, { replace: true });
+    } catch (err) {
+      const msg = err.message || 'Invalid institutional credentials. Please verify and try again.';
+      setErrorMessage(msg);
+      showToast(msg, 'error');
+    } finally {
       setIsLoading(false);
-      if (selectedRole === 'HOD') {
-        navigate('/hod/dashboard');
-      } else if (selectedRole === 'AC') {
-        navigate('/coordinator/dashboard');
-      } else {
-        navigate('/faculty/dashboard');
-      }
-    }, 600);
+    }
   };
 
-  const handleRoleSelect = (role, demoEmail) => {
-    setSelectedRole(role);
-    setEmail(demoEmail);
+  const handleRolePreset = (presetEmail) => {
+    setEmail(presetEmail);
+    setPassword('Password123!');
+    setErrorMessage(null);
   };
 
   return (
     <Card className="ui-card-hover" style={{ padding: '32px 28px' }}>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '1.375rem', marginBottom: '6px' }}>Portal Authentication</h2>
+        <h2 style={{ fontSize: '1.375rem', marginBottom: '6px' }}>Staff Sign In</h2>
         <p className="text-muted text-sm">
-          Sign in with your institutional credentials to access your designated authority console.
+          Authenticate using your institutional credentials for role-authorized portal access.
         </p>
       </div>
 
-      {/* Role Selector Tabs for Phase 1 Demo & Testing */}
+      {/* Role Quick Preset Selector for Testing */}
       <div style={{ marginBottom: '20px' }}>
-        <label className="ui-label" style={{ marginBottom: '8px', display: 'block' }}>
-          Select Authority Role (Phase 1 Sandbox)
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <label className="ui-label" style={{ margin: 0 }}>
+            Quick Account Credentials
+          </label>
+          <span className="text-xs text-muted">Click to autofill</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           <button
             type="button"
-            className={`btn ${selectedRole === 'FACULTY' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-            onClick={() => handleRoleSelect('FACULTY', 'faculty@nec.edu.in')}
+            className={`btn ${email === 'faculty@nec.edu.in' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+            style={{ fontSize: '0.75rem', padding: '6px 4px' }}
+            onClick={() => handleRolePreset('faculty@nec.edu.in')}
           >
             Faculty
           </button>
           <button
             type="button"
-            className={`btn ${selectedRole === 'AC' ? 'btn-secondary' : 'btn-outline'} btn-sm`}
-            onClick={() => handleRoleSelect('AC', 'ac@nec.edu.in')}
+            className={`btn ${email === 'ac@nec.edu.in' ? 'btn-secondary' : 'btn-outline'} btn-sm`}
+            style={{ fontSize: '0.75rem', padding: '6px 4px' }}
+            onClick={() => handleRolePreset('ac@nec.edu.in')}
           >
-            Coordinator
+            Coord
           </button>
           <button
             type="button"
-            className={`btn ${selectedRole === 'HOD' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+            className={`btn ${email === 'hod@nec.edu.in' ? 'btn-primary' : 'btn-outline'} btn-sm`}
             style={{
-              backgroundColor: selectedRole === 'HOD' ? 'var(--color-primary-container)' : undefined,
-              borderColor: selectedRole === 'HOD' ? 'var(--color-secondary)' : undefined,
+              fontSize: '0.75rem',
+              padding: '6px 4px',
+              backgroundColor: email === 'hod@nec.edu.in' ? 'var(--color-primary-container)' : undefined,
+              borderColor: email === 'hod@nec.edu.in' ? 'var(--color-secondary)' : undefined,
             }}
-            onClick={() => handleRoleSelect('HOD', 'hod@nec.edu.in')}
+            onClick={() => handleRolePreset('hod@nec.edu.in')}
           >
-            HOD Exec
+            HOD
+          </button>
+          <button
+            type="button"
+            className={`btn ${email === 'admin@nec.edu.in' ? 'btn-subtle' : 'btn-outline'} btn-sm`}
+            style={{ fontSize: '0.75rem', padding: '6px 4px' }}
+            onClick={() => handleRolePreset('admin@nec.edu.in')}
+          >
+            Admin
           </button>
         </div>
       </div>
+
+      {/* Error / Alert Banner */}
+      {errorMessage && (
+        <div
+          style={{
+            backgroundColor: isSessionExpired ? 'var(--color-warning-bg)' : 'var(--color-error-container)',
+            color: isSessionExpired ? 'var(--color-warning-text)' : 'var(--color-on-error-container)',
+            border: `1px solid ${isSessionExpired ? 'var(--color-warning-border)' : '#ffb4ab'}`,
+            borderRadius: 'var(--radius-md)',
+            padding: '10px 14px',
+            fontSize: '0.8125rem',
+            marginBottom: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+          role="alert"
+        >
+          <span>{isSessionExpired ? '⚠️' : '✕'}</span>
+          <span style={{ flex: 1 }}>{errorMessage}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Input
@@ -83,18 +146,38 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          placeholder="name@nec.edu.in"
-          helperText="Authoritative institutional identity address"
+          autoFocus
+          placeholder="staff@nec.edu.in"
+          helperText="Domain: @nec.edu.in"
         />
 
-        <Input
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          placeholder="••••••••••••"
-        />
+        <div style={{ position: 'relative' }}>
+          <Input
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="••••••••••••"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: 36,
+              background: 'none',
+              border: 'none',
+              fontSize: '0.75rem',
+              color: 'var(--color-secondary)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            {showPassword ? 'Hide' : 'Show'}
+          </button>
+        </div>
 
         <div
           style={{
@@ -109,8 +192,8 @@ export default function LoginPage() {
             <input type="checkbox" defaultChecked />
             <span>Remember session</span>
           </label>
-          <span style={{ color: 'var(--color-secondary)', cursor: 'pointer' }}>
-            Reset password?
+          <span className="text-muted" style={{ cursor: 'not-allowed', fontSize: '0.75rem' }}>
+            ERP ext 241
           </span>
         </div>
 
@@ -121,7 +204,7 @@ export default function LoginPage() {
           className="w-full"
           isLoading={isLoading}
         >
-          Authenticate & Enter Portal
+          Sign In to Portal
         </Button>
       </form>
 
@@ -136,9 +219,9 @@ export default function LoginPage() {
           fontSize: '0.75rem',
         }}
       >
-        <span className="text-muted">Target Environment</span>
+        <span className="text-muted">Security Tier</span>
         <Badge variant="success" dot>
-          Phase 1 Foundation
+          JWT • Express Authoritative
         </Badge>
       </div>
     </Card>

@@ -1,17 +1,28 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
-export default function Topbar({
-  user = { name: 'Faculty Member', role: 'FACULTY', department: 'Computer Science & Engineering' },
-  onLogout,
-  unreadCount = 3,
-}) {
+export default function Topbar({ unreadCount = 3 }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    showToast('You have been signed out.', 'info');
+    navigate('/login');
+  };
+
   const getInitials = (name) => {
     if (!name) return 'U';
-    const parts = name.split(' ');
+    const parts = name.trim().split(' ');
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
+
+  const displayName = user?.name || 'Faculty Member';
+  const displayRole = user?.role || 'FACULTY';
 
   return (
     <header className="ui-topbar">
@@ -27,9 +38,9 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* Right: Quick Switcher, Notifications & Profile */}
+      {/* Right: Portal Switcher, Notifications & Authenticated Profile */}
       <div className="ui-topbar-right">
-        {/* Portal Switcher for Quick Preview */}
+        {/* Portal Switcher for Multi-Role Nav */}
         <div style={{ display: 'flex', gap: 6 }}>
           <NavLink
             to="/faculty/dashboard"
@@ -69,22 +80,20 @@ export default function Topbar({
 
         {/* User Profile Chip */}
         <div className="ui-topbar-user-profile">
-          <div className="ui-topbar-avatar">{getInitials(user.name)}</div>
+          <div className="ui-topbar-avatar">{getInitials(displayName)}</div>
           <div className="ui-topbar-user-info">
-            <span className="ui-topbar-user-name">{user.name}</span>
-            <span className="ui-topbar-user-role">{user.role}</span>
+            <span className="ui-topbar-user-name">{displayName}</span>
+            <span className="ui-topbar-user-role">{displayRole}</span>
           </div>
-          {onLogout && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="btn btn-outline btn-sm"
-              style={{ padding: '2px 8px', fontSize: '0.75rem', marginLeft: 6 }}
-              title="Sign Out"
-            >
-              Logout
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="btn btn-outline btn-sm"
+            style={{ padding: '2px 8px', fontSize: '0.75rem', marginLeft: 6 }}
+            title="Sign Out of Session"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

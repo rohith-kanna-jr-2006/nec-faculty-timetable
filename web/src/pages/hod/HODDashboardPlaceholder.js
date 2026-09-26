@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -6,6 +7,8 @@ import Button from '../../components/common/Button';
 import Breadcrumbs from '../../components/layout/Breadcrumbs';
 
 export default function HODDashboardPlaceholder() {
+  const navigate = useNavigate();
+
   return (
     <div>
       <PageHeader
@@ -22,24 +25,30 @@ export default function HODDashboardPlaceholder() {
         badge={<Badge variant="warning">LEVEL 01 • STATUTORY EXECUTIVE</Badge>}
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" size="sm" icon="📋">
-              Review Submissions
+            <Button variant="outline" size="sm" icon="👥" onClick={() => navigate('/hod/faculty')}>
+              Faculty Directory
             </Button>
-            <Button variant="primary" size="sm" icon="🛡️">
-              State Ratification
+            <Button variant="primary" size="sm" icon="➕" onClick={() => navigate('/hod/faculty/add')}>
+              Add New Faculty
             </Button>
           </div>
         }
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        <Card title="Department Faculty Roster" hoverable>
+        <Card
+          title="Department Faculty Roster"
+          hoverable
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/hod/faculty')}
+        >
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
             <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>28</span>
             <span className="text-muted text-sm">CSE Faculty Members</span>
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Badge variant="success">All Workloads Verified</Badge>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-secondary)' }}>View Roster →</span>
           </div>
         </Card>
 

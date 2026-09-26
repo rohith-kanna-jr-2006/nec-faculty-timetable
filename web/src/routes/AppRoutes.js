@@ -19,6 +19,8 @@ import RoutePlaceholder from '../pages/common/RoutePlaceholder';
 import AccessDenied from '../pages/common/AccessDenied';
 import MyTimetablePage from '../pages/faculty/MyTimetablePage';
 import WeeklyTimetablePage from '../pages/faculty/WeeklyTimetablePage';
+import FacultyListPage from '../pages/hod/FacultyListPage';
+import AddFacultyPage from '../pages/hod/AddFacultyPage';
 
 export default function AppRoutes() {
   return (
@@ -188,6 +190,8 @@ export default function AppRoutes() {
         <Route path="/hod" element={<HODLayout />}>
           <Route index element={<Navigate to="/hod/dashboard" replace />} />
           <Route path="dashboard" element={<HODDashboardPlaceholder />} />
+          <Route path="faculty" element={<FacultyListPage />} />
+          <Route path="faculty/add" element={<AddFacultyPage />} />
           <Route
             path="context"
             element={

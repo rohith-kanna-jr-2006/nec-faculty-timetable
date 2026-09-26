@@ -146,16 +146,292 @@ Retrieve active user session profile during page refresh or session restoration.
 ## 3. Faculty Directory Master
 
 ### `GET /api/faculty`
-List faculty with pagination and search.
+List faculty with pagination and search (27 Authoritative Faculty: 25 CSE, 2 ECE).
 - **Access**: Public / Authenticated
 - **Query Params**: `search`, `department`, `role`, `page`, `limit`
 
 ### `GET /api/faculty/:facultyId`
 Retrieve faculty details by unique ID (e.g. `FWL-01`).
+- **Response Structure**:
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "673f...",
+    "facultyId": "FWL-01",
+    "facultyName": "Dr. T. Rajasekaran",
+    "designation": "Professor & Head Of Department HOD",
+    "department": "Department of Computer Science and Engineering",
+    "email": "drtrajasekaran@nec.edu.in",
+    "phone": null,
+    "roles": ["HOD"],
+    "isActive": true
+  }
+}
+```
+
+### `GET /api/faculty/:facultyId/allocations`
+Retrieve categorized teaching allocations and independent institutional responsibilities.
+- **Access**: Public / Authenticated
+- **Query Params**: `category`, `year`, `section`, `courseCode`, `allocationType`
+- **Response Structure**:
+```json
+{
+  "success": true,
+  "data": {
+    "facultyId": "FWL-01",
+    "facultyName": "Dr. T. Rajasekaran",
+    "designation": "Professor & Head Of Department HOD",
+    "department": "Department of Computer Science and Engineering",
+    "summary": {
+      "teachingHours": 8,
+      "responsibilityHours": 0,
+      "totalHours": 8,
+      "sourceTotalHours": 8,
+      "status": "MATCHED",
+      "isIncomplete": false,
+      "incompleteReason": null
+    },
+    "teachingLoad": {
+      "ugTheory": [
+        {
+          "category": "UG Theory 1",
+          "courseCode": "22CSX01",
+          "courseName": "Deep Learning (PSE, Full Autonomy)",
+          "allocation": "UG III Year B",
+          "hours": 3,
+          "allocationType": "UG_THEORY",
+          "year": "III Year",
+          "section": "B"
+        }
+      ],
+      "labs": [
+        {
+          "category": "Lab 1",
+          "courseCode": "22CSP09",
+          "courseName": "Full Stack Development Laboratory",
+          "allocation": "UG III Year A",
+          "hours": 4,
+          "allocationType": "LAB",
+          "year": "III Year",
+          "section": "A"
+        }
+      ],
+      "pg": [
+        {
+          "category": "PG",
+          "courseCode": "22CPE02",
+          "courseName": "Project Phase I",
+          "allocation": "PG II Year",
+          "hours": 1,
+          "allocationType": "PG",
+          "year": "II Year",
+          "section": null
+        }
+      ],
+      "others": []
+    },
+    "responsibilities": {
+      "academic": [],
+      "administrative": [],
+      "coordination": [],
+      "institutional": []
+    },
+    "allocations": [...]
+  }
+}
+```
 
 ### `POST /api/faculty`
-Create new faculty profile.
-- **Access**: HOD, ADMIN
+Create new faculty profile with structured workload allocation.
+
+- **Access**: `HOD`, `ADMIN` (RBAC enforced)
+  - `FACULTY` and `AC` are rejected with `403 FORBIDDEN`.
+  - Unauthenticated requests are rejected with `401 UNAUTHORIZED`.
+- **Authoritative Calculations**: Server-authoritative. The frontend must **not** duplicate workload formulas. The backend computes:
+  $$\text{calculatedTeachingHours} + \text{calculatedResponsibilityHours} = \text{calculatedTotalHours}$$
+- **Automatic ID Generation**: If `facultyId` is omitted, the backend auto-generates the next sequential identifier (e.g. `FWL-28`).
+
+#### Request Headers
+```http
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+#### Request Schema
+```typescript
+interface CreateFacultyRequest {
+  facultyId?: string; // Optional. e.g. "FWL-28". Auto-generated if omitted.
+  facultyName: string; // Required. Non-empty string.
+  designation: string; // Required. Non-empty string.
+  department?: string; // Optional. Defaults to "Department of Computer Science and Engineering"
+  email?: string; // Optional. Valid email address.
+  phone?: string; // Optional.
+  roles?: string[]; // Optional user roles. Defaults to ["FACULTY"]
+  sourceTotalHours?: number; // Optional. If omitted, defaults to calculatedTotalHours (status: MATCHED)
+  teaching?: {
+    ugTheory1?: TeachingItem[];
+    ugTheory2?: TeachingItem[];
+    lab1?: TeachingItem[];
+    lab2?: TeachingItem[];
+    pg?: PGTeachingItem[]; // Each course = 1 equivalent hour/week (omitted hours defaults to 1)
+    others?: OthersTeachingItem[]; // Hours strictly 1–3 hours/week (reject < 1 or > 3)
+  };
+  responsibilities?: ResponsibilityItem[]; // Structured data. Hours strictly 1–6 hours/week.
+}
+
+interface TeachingItem {
+  courseName: string; // Required.
+  courseCode?: string; // Optional. e.g. "22CS501"
+  allocation?: string; // Optional. e.g. "UG III Year A"
+  hours?: number; // Contact hours >= 0
+  year?: string; // Optional. Parsed from allocation if omitted
+  section?: string; // Optional. Parsed from allocation if omitted
+}
+
+interface PGTeachingItem extends TeachingItem {
+  hours?: 1; // Fixed: each assigned course = 1 equivalent hour/week (omitted hours defaults to 1)
+}
+
+interface OthersTeachingItem extends TeachingItem {
+  hours: number; // Required: 1 <= hours <= 3. Hours < 1 or > 3 are rejected.
+}
+
+interface ResponsibilityItem {
+  role: string; // Required. Must match one of the 38 authoritative master roles.
+  hours: number; // Required: 1 <= hours <= 6. Hours < 1 or > 6 are rejected.
+  allocation?: string; // Optional. e.g. "UG III Year A" or "Dept Level"
+  responsibilityType?: 'Academic' | 'Administrative' | 'Coordination' | 'Institutional'; // Auto-classified if omitted
+  year?: string; // Optional. Parsed from allocation if omitted
+  section?: string; // Optional. Parsed from allocation if omitted
+}
+```
+
+#### Authoritative 38 Responsibility Master Roles
+Responsibilities must be structured data and match one of these canonical institutional roles:
+```
+1. AI Affiliation/AICTE Work          20. NAAC/NBA Coordinator
+2. Admin Coordinator                  21. NBA Coordinator
+3. Alumni & Higher Studies            22. NIRF/IQAC Coordinator
+4. CC1 Lab I/C                        23. NPTEL Online Courses (Faculty & Students)
+5. CC1 Lab Incharge                   24. One Credit Course
+6. CCI Lab Incharge                   25. Overall Academic Coordinator
+7. Class Advisor                      26. P&EA Coordinator
+8. DCOE                               27. PAC, DAB, BoS Coordinator
+9. Dept. Association                  28. PCD Club
+10. Dept. CFiR and RSD Coordinator    29. Placement Coordinator
+11. Dept. CIPD Coordinator            30. Proctor
+12. Dept. Exam Cell I/C               31. Professional Society/Chapter
+13. Dept. Infrastructure / ...        32. Startups & Business Incubation / ...
+14. Dept. Meeting Minutes             33. Student Achievements
+15. Dept. Newsletter/Magazine         34. Student Affairs Coordinator
+16. Faculty Achievements              35. Student Exit Survey
+17. Industrial Relations Coordinator  36. TECH GURU
+18. Institute Social Media / Website  37. Timetable Coordinator
+19. MOU/Internship                    38. Timetable I/C
+```
+*Note: Duplicate responsibilities for the same faculty member are strictly rejected.*
+
+#### Example Request Payload
+```json
+{
+  "facultyName": "Dr. K. Suresh Kumar",
+  "designation": "Associate Professor",
+  "department": "Department of Computer Science and Engineering",
+  "email": "sureshkumar@nec.edu.in",
+  "phone": "9876543210",
+  "teaching": {
+    "ugTheory1": [
+      { "courseCode": "22CS501", "courseName": "Compiler Design", "allocation": "UG III Year A", "hours": 3 }
+    ],
+    "ugTheory2": [
+      { "courseCode": "22CS502", "courseName": "Cloud Computing", "allocation": "UG III Year B", "hours": 3 }
+    ],
+    "lab1": [
+      { "courseCode": "22CSP07", "courseName": "Compiler Design Laboratory", "allocation": "UG III Year A", "hours": 4 }
+    ],
+    "lab2": [
+      { "courseCode": "22CSP08", "courseName": "Cloud Computing Laboratory", "allocation": "UG III Year B", "hours": 4 }
+    ],
+    "pg": [
+      { "courseCode": "22CPB05", "courseName": "Advanced Distributed Systems", "allocation": "PG I Year" }
+    ],
+    "others": [
+      { "courseName": "PBL / Mini Project", "allocation": "UG II Year A", "hours": 2 }
+    ]
+  },
+  "responsibilities": [
+    { "role": "Class Advisor", "allocation": "UG III Year A", "hours": 2 },
+    { "role": "Timetable Coordinator", "allocation": "Dept Level", "hours": 3 }
+  ]
+}
+```
+
+#### Success Response (`201 Created`)
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "6740a1b2c3d4e5f6a7b8c9d0",
+    "facultyId": "FWL-28",
+    "facultyName": "Dr. K. Suresh Kumar",
+    "designation": "Associate Professor",
+    "department": "Department of Computer Science and Engineering",
+    "email": "sureshkumar@nec.edu.in",
+    "phone": "9876543210",
+    "roles": ["FACULTY"],
+    "isActive": true,
+    "workloadCalculation": {
+      "calculatedTeachingHours": 17,
+      "calculatedResponsibilityHours": 5,
+      "calculatedTotalHours": 22,
+      "sourceTotalHours": 22,
+      "status": "MATCHED",
+      "discrepancyNote": null
+    },
+    "summary": {
+      "teachingHours": 17,
+      "responsibilityHours": 5,
+      "totalHours": 22,
+      "sourceTotalHours": 22,
+      "status": "MATCHED",
+      "isIncomplete": false,
+      "incompleteReason": null
+    },
+    "teachingLoad": {
+      "ugTheory": [ ... ],
+      "labs": [ ... ],
+      "pg": [ ... ],
+      "others": [ ... ]
+    },
+    "responsibilities": {
+      "academic": [ ... ],
+      "administrative": [ ... ],
+      "coordination": [ ... ],
+      "institutional": [ ... ]
+    },
+    "allocations": [ ... ]
+  }
+}
+```
+
+#### Validation Error Responses (`400 Bad Request`)
+Returned with standard error envelope `code: "VALIDATION_ERROR"` and detailed error list:
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "details": [
+    "facultyName is required and must be a non-empty string",
+    "Others contact hours must be between 1 and 3 hours/week (received 4 in Others row 1). Hours above 3 are rejected.",
+    "Responsibility hours must be between 1 and 6 hours/week (received 7 in Responsibility row 1). Hours above 6 are rejected.",
+    "Duplicate responsibility 'Proctor' rejected. A responsibility cannot be assigned multiple times to the same faculty member.",
+    "Invalid responsibility role 'Custom Non-Master Task' in Responsibility row 1. Must match one of the authoritative 38 institutional responsibility roles.",
+    "Responsibilities must be structured data and cannot be a free-text string."
+  ]
+}
+```
 
 ### `PUT /api/faculty/:facultyId`
 Update faculty profile.
@@ -166,7 +442,7 @@ Update faculty profile.
 ## 4. Faculty Workload Master
 
 ### `GET /api/workload`
-List all 28 faculty workload records.
+List all 27 faculty workload records.
 - **Query Params**:
   - `search`: multi-attribute text search across faculty, courses, responsibilities
   - `status`: `MATCHED`, `REVIEW REQUIRED`, `INCOMPLETE SOURCE DATA`
@@ -181,12 +457,12 @@ Dynamic aggregation metrics computed live from MongoDB:
 {
   "success": true,
   "data": {
-    "totalFaculty": 28,
-    "totalTeachingHours": 401,
+    "totalFaculty": 27,
+    "totalTeachingHours": 397,
     "totalResponsibilityHours": 129,
-    "totalAllocatedHours": 530,
+    "totalAllocatedHours": 526,
     "completeCount": 26,
-    "incompleteCount": 2,
+    "incompleteCount": 1,
     "discrepancyCount": 0
   }
 }
@@ -197,9 +473,13 @@ Retrieve records requiring arithmetic review (`REVIEW REQUIRED`).
 
 ### `GET /api/workload/incomplete`
 Retrieve records with incomplete source totals (`INCOMPLETE SOURCE DATA`).
+- Contains `Mrs. A. Satheesh Kumar` (`FWL-20`) whose TECH GURU allocation hours are not legible/specified in the source document (`hours: null`, `sourceTotalHours: null`).
 
 ### `GET /api/workload/:facultyId`
 Retrieve full breakdown of teaching rows and responsibilities for a faculty member.
+
+### `GET /api/workload/:facultyId/allocations`
+Alias to `/api/faculty/:facultyId/allocations`. Returns categorized teaching load (UG Theory, Labs, PG, Others) and institutional responsibilities (Academic, Administrative, Coordination, Institutional).
 
 ---
 

@@ -1,4 +1,14 @@
+const mongoose = require('mongoose');
 const Faculty = require('../models/Faculty');
+const FacultyWorkload = require('../models/FacultyWorkload');
+const {
+  formatFacultyAllocations,
+  classifyResponsibility,
+  parseYearAndSection,
+  calculateTeachingHours,
+  calculateResponsibilityHours,
+} = require('../services/workloadService');
+const { getCanonicalRoleName } = require('../constants/responsibilityMaster');
 const { successResponse, errorResponse } = require('../utils/responseHandler');
 const { getPaginationParams, formatPaginatedResult } = require('../utils/pagination');
 
@@ -68,29 +78,203 @@ async function getFacultyById(req, res, next) {
 }
 
 /**
- * Create new Faculty record
+ * Helper to dynamically generate the next sequential FWL-XX ID.
+ * Queries existing records from both Faculty and FacultyWorkload without hardcoding constants.
+ */
+async function generateNextFacultyId() {
+  const [facultyDocs, workloadDocs] = await Promise.all([
+    Faculty.find({ facultyId: /^FWL-\d+$/i }, { facultyId: 1 }),
+    FacultyWorkload.find({ facultyId: /^FWL-\d+$/i }, { facultyId: 1 }),
+  ]);
+
+  let maxNum = 0;
+  const inspectDoc = (doc) => {
+    if (!doc || !doc.facultyId) return;
+    const m = doc.facultyId.match(/^FWL-(\d+)$/i);
+    if (m) {
+      const num = parseInt(m[1], 10);
+      if (num > maxNum) maxNum = num;
+    }
+  };
+
+  facultyDocs.forEach(inspectDoc);
+  workloadDocs.forEach(inspectDoc);
+
+  const nextNum = maxNum > 0 ? maxNum + 1 : 1;
+  return `FWL-${String(nextNum).padStart(2, '0')}`;
+}
+
+/**
+ * Create new Faculty record with Workload Allocation
  * POST /api/faculty
  */
 async function createFaculty(req, res, next) {
   try {
-    const { facultyId, facultyName, designation, department, email, phone, roles } = req.body;
-
-    const existing = await Faculty.findOne({ facultyId });
-    if (existing) {
-      return errorResponse(res, `Faculty ID '${facultyId}' already exists`, 409, 'DUPLICATE_ID');
-    }
-
-    const faculty = await Faculty.create({
+    const {
       facultyId,
       facultyName,
       designation,
-      department: department || 'Computer Science and Engineering',
+      department,
       email,
       phone,
-      roles: roles || [],
+      roles,
+      teaching: rawTeaching,
+      responsibilities: rawResponsibilities,
+      sourceTotalHours: rawSourceTotalHours,
+    } = req.body;
+
+    // 1. Resolve Faculty ID (auto-generate if omitted)
+    const finalFacultyId = facultyId && facultyId.trim()
+      ? facultyId.trim().toUpperCase()
+      : await generateNextFacultyId();
+
+    const existingFaculty = await Faculty.findOne({ facultyId: finalFacultyId });
+    if (existingFaculty) {
+      return errorResponse(res, `Faculty ID '${finalFacultyId}' already exists`, 409, 'DUPLICATE_ID');
+    }
+
+    const existingWorkload = await FacultyWorkload.findOne({ facultyId: finalFacultyId });
+    if (existingWorkload) {
+      return errorResponse(res, `Workload record for faculty '${finalFacultyId}' already exists`, 409, 'DUPLICATE_ID');
+    }
+
+    const dept = department && department.trim()
+      ? department.trim()
+      : 'Department of Computer Science and Engineering';
+
+    // 2. Parse and structure Teaching Allocations
+    const teachingData = rawTeaching || {};
+    const normalizeTeachingItem = (item, defaultCategory) => {
+      const parsed = parseYearAndSection(item.allocation);
+      return {
+        category: item.category || defaultCategory,
+        courseCode: item.courseCode ? item.courseCode.trim() : null,
+        courseName: item.courseName.trim(),
+        allocation: item.allocation ? item.allocation.trim() : null,
+        hours: typeof item.hours === 'number' ? item.hours : 0,
+        year: item.year ? item.year.trim() : parsed.year,
+        section: item.section ? item.section.trim() : parsed.section,
+      };
+    };
+
+    const teaching = {
+      ugTheory1: (teachingData.ugTheory1 || []).map((i) => normalizeTeachingItem(i, 'UG Theory 1')),
+      ugTheory2: (teachingData.ugTheory2 || []).map((i) => normalizeTeachingItem(i, 'UG Theory 2')),
+      lab1: (teachingData.lab1 || []).map((i) => normalizeTeachingItem(i, 'Lab 1')),
+      lab2: (teachingData.lab2 || []).map((i) => normalizeTeachingItem(i, 'Lab 2')),
+      pg: (teachingData.pg || []).map((i) => {
+        const item = normalizeTeachingItem(i, 'PG');
+        // PG / Honours / Minor: each assigned course = 1 equivalent hour/week
+        item.hours = i.hours !== undefined && i.hours !== null ? i.hours : 1;
+        return item;
+      }),
+      others: (teachingData.others || []).map((i) => normalizeTeachingItem(i, 'Others')),
+    };
+
+    // 3. Parse and structure Responsibilities
+    const responsibilitiesData = rawResponsibilities || [];
+    const responsibilities = responsibilitiesData.map((item) => {
+      const canonicalRole = getCanonicalRoleName(item.role);
+      const parsed = parseYearAndSection(item.allocation);
+      const type = item.responsibilityType || classifyResponsibility(canonicalRole);
+      return {
+        category: item.category || 'RESPONSIBILITY',
+        role: canonicalRole,
+        allocation: item.allocation ? item.allocation.trim() : null,
+        hours: typeof item.hours === 'number' ? item.hours : null,
+        responsibilityType: type,
+        year: item.year ? item.year.trim() : parsed.year,
+        section: item.section ? item.section.trim() : parsed.section,
+      };
     });
 
-    return successResponse(res, faculty, 201);
+    // 4. Server-Authoritative Workload Calculation
+    const calculatedTeachingHours = calculateTeachingHours(teaching);
+    const calculatedResponsibilityHours = calculateResponsibilityHours(responsibilities);
+    const calculatedTotalHours = calculatedTeachingHours + calculatedResponsibilityHours;
+
+    let sourceTotalHours = rawSourceTotalHours;
+    if (sourceTotalHours === undefined || sourceTotalHours === null) {
+      sourceTotalHours = calculatedTotalHours;
+    } else {
+      sourceTotalHours = Number(sourceTotalHours);
+    }
+
+    const status = sourceTotalHours === calculatedTotalHours ? 'MATCHED' : 'REVIEW REQUIRED';
+    const discrepancyNote =
+      sourceTotalHours !== calculatedTotalHours
+        ? `Source total (${sourceTotalHours}h) does not match calculated total (${calculatedTotalHours}h). Difference: ${Math.abs(
+            sourceTotalHours - calculatedTotalHours
+          )}h.`
+        : null;
+
+    // 5. Dual Persistence with Compensating Atomic Rollback Strategy
+    let createdFaculty = null;
+    let createdWorkload = null;
+
+    try {
+      createdFaculty = await Faculty.create({
+        facultyId: finalFacultyId,
+        facultyName: facultyName.trim(),
+        designation: designation.trim(),
+        department: dept,
+        email: email ? email.trim() : undefined,
+        phone: phone ? phone.trim() : null,
+        roles: roles && roles.length > 0 ? roles : ['FACULTY'],
+      });
+
+      createdWorkload = await FacultyWorkload.create({
+        facultyId: finalFacultyId,
+        facultyName: facultyName.trim(),
+        designation: designation.trim(),
+        department: dept,
+        teaching,
+        responsibilities,
+        calculatedTeachingHours,
+        calculatedResponsibilityHours,
+        calculatedTotalHours,
+        sourceTotalHours,
+        status,
+        discrepancyNote,
+        isIncomplete: false,
+        sourceVersion: 'v1.0-hod-entry',
+      });
+    } catch (persistError) {
+      // Compensating rollback: Clean up any partial state so DB is never left inconsistent
+      if (createdFaculty) {
+        await Faculty.deleteOne({ _id: createdFaculty._id }).catch(() => {});
+      }
+      if (createdWorkload) {
+        await FacultyWorkload.deleteOne({ _id: createdWorkload._id }).catch(() => {});
+      }
+      throw persistError;
+    }
+
+    // 6. Response Formatting
+    const formatted = formatFacultyAllocations(createdWorkload);
+    const facultyObj = createdFaculty.toObject ? createdFaculty.toObject() : createdFaculty;
+
+    return successResponse(
+      res,
+      {
+        ...facultyObj,
+        faculty: createdFaculty,
+        workload: createdWorkload,
+        workloadCalculation: {
+          calculatedTeachingHours,
+          calculatedResponsibilityHours,
+          calculatedTotalHours,
+          sourceTotalHours,
+          status,
+          discrepancyNote,
+        },
+        summary: formatted.summary,
+        teachingLoad: formatted.teachingLoad,
+        responsibilities: formatted.responsibilities,
+        allocations: formatted.allocations,
+      },
+      201
+    );
   } catch (error) {
     next(error);
   }
@@ -120,6 +304,34 @@ async function updateFaculty(req, res, next) {
 }
 
 /**
+ * Get structured allocations for a faculty member
+ * GET /api/faculty/:facultyId/allocations
+ */
+async function getFacultyAllocations(req, res, next) {
+  try {
+    const { facultyId } = req.params;
+    const { category, year, section, courseCode, allocationType } = req.query;
+
+    const workload = await FacultyWorkload.findOne({ facultyId });
+    if (!workload) {
+      return errorResponse(res, `Allocations for faculty '${facultyId}' not found`, 404, 'NOT_FOUND');
+    }
+
+    const formatted = formatFacultyAllocations(workload, {
+      category,
+      year,
+      section,
+      courseCode,
+      allocationType,
+    });
+
+    return successResponse(res, formatted);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Delete Faculty record
  * DELETE /api/faculty/:facultyId
  */
@@ -141,6 +353,7 @@ async function deleteFaculty(req, res, next) {
 module.exports = {
   getFacultyList,
   getFacultyById,
+  getFacultyAllocations,
   createFaculty,
   updateFaculty,
   deleteFaculty,

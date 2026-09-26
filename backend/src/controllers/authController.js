@@ -15,13 +15,13 @@ async function login(req, res, next) {
       return errorResponse(res, 'Invalid email or password', 401, 'INVALID_CREDENTIALS');
     }
 
-    if (!user.isActive) {
-      return errorResponse(res, 'Account has been deactivated. Contact admin.', 403, 'ACCOUNT_DEACTIVATED');
-    }
-
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return errorResponse(res, 'Invalid email or password', 401, 'INVALID_CREDENTIALS');
+    }
+
+    if (!user.isActive) {
+      return errorResponse(res, 'Account has been deactivated. Please contact administrator.', 401, 'ACCOUNT_DEACTIVATED');
     }
 
     const token = generateToken(user);
@@ -35,7 +35,16 @@ async function login(req, res, next) {
       isActive: user.isActive,
     };
 
-    return successResponse(res, { user: userResponse, token }, 200);
+    return successResponse(
+      res,
+      {
+        user: userResponse,
+        token,
+        role: user.role,
+        facultyId: user.facultyId,
+      },
+      200
+    );
   } catch (error) {
     next(error);
   }
@@ -48,7 +57,7 @@ async function login(req, res, next) {
 async function getMe(req, res, next) {
   try {
     const user = req.user;
-    return successResponse(res, {
+    const profile = {
       id: user._id,
       name: user.name,
       email: user.email,
@@ -56,6 +65,10 @@ async function getMe(req, res, next) {
       facultyId: user.facultyId,
       isActive: user.isActive,
       createdAt: user.createdAt,
+    };
+    return successResponse(res, {
+      ...profile,
+      user: profile,
     });
   } catch (error) {
     next(error);

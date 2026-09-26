@@ -146,13 +146,24 @@ async function runTests() {
     assert(healthRes.body.service === 'nec-faculty-backend', 'Health service identifier is "nec-faculty-backend"');
 
     // ------------------------------------------------------------
-    // Test 3 & 4: Authentication (Login Success & Failure)
+    // Test 3 & 4: Authentication (Login Validation, Credentials & Edge Cases)
     // ------------------------------------------------------------
-    console.log('\n--- Test 3 & 4: Authentication (Login Success & Failure) ---');
-    // Ensure test user exists
+    console.log('\n--- Test 3 & 4: Authentication (Login Validation, Credentials & Edge Cases) ---');
     const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash('TestPass123!', 10);
-    await User.deleteMany({ email: 'test_auth@nec.edu.in' });
+    await User.deleteMany({
+      email: {
+        $in: [
+          'test_auth@nec.edu.in',
+          'test_inactive@nec.edu.in',
+          'faculty_test@nec.edu.in',
+          'ac_test@nec.edu.in',
+          'hod_test@nec.edu.in',
+          'admin_test@nec.edu.in',
+        ],
+      },
+    });
+
     const testUser = await User.create({
       name: 'Auth Tester',
       email: 'test_auth@nec.edu.in',
@@ -162,6 +173,43 @@ async function runTests() {
       isActive: true,
     });
 
+    const inactiveUser = await User.create({
+      name: 'Inactive Tester',
+      email: 'test_inactive@nec.edu.in',
+      passwordHash: hash,
+      role: 'FACULTY',
+      facultyId: 'FWL-09',
+      isActive: false,
+    });
+
+    // 4.1 Missing email validation (400)
+    const missingEmailRes = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { password: 'TestPass123!' },
+    });
+    assert(missingEmailRes.statusCode === 400, 'Login with missing email returns HTTP 400');
+    assert(missingEmailRes.body.code === 'VALIDATION_ERROR', 'Login with missing email returns VALIDATION_ERROR');
+
+    // 4.2 Missing password validation (400)
+    const missingPassRes = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'test_auth@nec.edu.in' },
+    });
+    assert(missingPassRes.statusCode === 400, 'Login with missing password returns HTTP 400');
+    assert(missingPassRes.body.code === 'VALIDATION_ERROR', 'Login with missing password returns VALIDATION_ERROR');
+
+    // 4.3 Unknown user rejection (401 - prevents account enumeration)
+    const unknownUserRes = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'nonexistent_user_999@nec.edu.in', password: 'TestPass123!' },
+    });
+    assert(unknownUserRes.statusCode === 401, 'Login with unknown user returns HTTP 401');
+    assert(unknownUserRes.body.code === 'INVALID_CREDENTIALS', 'Login with unknown user returns INVALID_CREDENTIALS');
+
+    // 4.4 Wrong password rejection (401)
     const loginFailRes = await makeRequest(app, {
       method: 'POST',
       path: '/api/auth/login',
@@ -169,7 +217,18 @@ async function runTests() {
     });
     assert(loginFailRes.statusCode === 401, 'Login with wrong password returns HTTP 401');
     assert(loginFailRes.body.success === false, 'Login failure response has success: false');
+    assert(loginFailRes.body.code === 'INVALID_CREDENTIALS', 'Wrong password returns code INVALID_CREDENTIALS');
 
+    // 4.5 Inactive / deactivated user rejection (401)
+    const inactiveLoginRes = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'test_inactive@nec.edu.in', password: 'TestPass123!' },
+    });
+    assert(inactiveLoginRes.statusCode === 401, 'Login with inactive user returns HTTP 401');
+    assert(inactiveLoginRes.body.code === 'ACCOUNT_DEACTIVATED', 'Inactive user returns code ACCOUNT_DEACTIVATED');
+
+    // 4.6 Valid credentials login success (200)
     const loginSuccessRes = await makeRequest(app, {
       method: 'POST',
       path: '/api/auth/login',
@@ -178,18 +237,22 @@ async function runTests() {
     assert(loginSuccessRes.statusCode === 200, 'Login with correct password returns HTTP 200');
     assert(loginSuccessRes.body.success === true, 'Login success returns success: true');
     assert(!!loginSuccessRes.body.data.token, 'Login returns valid JWT token');
+    assert(loginSuccessRes.body.data.role === 'HOD', 'Login response provides role directly');
+    assert(loginSuccessRes.body.data.facultyId === 'FWL-01', 'Login response provides facultyId directly');
+    assert(!!loginSuccessRes.body.data.user, 'Login response provides user object');
     assert(!loginSuccessRes.body.data.user.passwordHash, 'User object strictly excludes passwordHash');
 
     const hodToken = loginSuccessRes.body.data.token;
 
     // ------------------------------------------------------------
-    // Test 5: JWT Verification & /api/auth/me
+    // Test 5: JWT Verification, Expiration & Edge Cases
     // ------------------------------------------------------------
-    console.log('\n--- Test 5: JWT Authentication & Profile Retrieval ---');
+    console.log('\n--- Test 5: JWT Authentication, Expiry & Profile Retrieval ---');
     const decoded = verifyToken(hodToken);
     assert(decoded.email === 'test_auth@nec.edu.in', 'verifyToken extracts correct user email');
     assert(decoded.role === 'HOD', 'verifyToken extracts correct user role (HOD)');
 
+    // 5.1 Valid token profile retrieval
     const meRes = await makeRequest(app, {
       method: 'GET',
       path: '/api/auth/me',
@@ -197,11 +260,62 @@ async function runTests() {
     });
     assert(meRes.statusCode === 200, '/api/auth/me returns HTTP 200 with valid token');
     assert(meRes.body.data.email === 'test_auth@nec.edu.in', '/api/auth/me returns matching user email');
+    assert(meRes.body.data.role === 'HOD', '/api/auth/me returns matching user role');
+    assert(meRes.body.data.facultyId === 'FWL-01', '/api/auth/me returns matching facultyId');
+    assert(!meRes.body.data.passwordHash, '/api/auth/me strictly excludes passwordHash');
+
+    // 5.2 Missing token (401 UNAUTHORIZED)
+    const missingTokenRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/auth/me',
+    });
+    assert(missingTokenRes.statusCode === 401, '/api/auth/me with missing token returns HTTP 401');
+    assert(missingTokenRes.body.code === 'UNAUTHORIZED', 'Missing token returns code UNAUTHORIZED');
+
+    // 5.3 Malformed token (401 INVALID_TOKEN)
+    const malformedTokenRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/auth/me',
+      headers: { Authorization: 'Bearer this.is.an.invalid.token' },
+    });
+    assert(malformedTokenRes.statusCode === 401, '/api/auth/me with malformed token returns HTTP 401');
+    assert(malformedTokenRes.body.code === 'INVALID_TOKEN', 'Malformed token returns code INVALID_TOKEN');
+
+    // 5.4 Expired token (401 TOKEN_EXPIRED)
+    const expiredToken = generateToken(testUser, '1ms');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const expiredTokenRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/auth/me',
+      headers: { Authorization: `Bearer ${expiredToken}` },
+    });
+    assert(expiredTokenRes.statusCode === 401, '/api/auth/me with expired token returns HTTP 401');
+    assert(expiredTokenRes.body.code === 'TOKEN_EXPIRED', 'Expired token returns code TOKEN_EXPIRED');
+
+    // 5.5 Token for inactive / deactivated user (401 USER_INACTIVE)
+    const inactiveUserToken = generateToken(inactiveUser);
+    const inactiveTokenRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/auth/me',
+      headers: { Authorization: `Bearer ${inactiveUserToken}` },
+    });
+    assert(inactiveTokenRes.statusCode === 401, '/api/auth/me for inactive user returns HTTP 401');
+    assert(inactiveTokenRes.body.code === 'USER_INACTIVE', 'Inactive user returns code USER_INACTIVE');
 
     // ------------------------------------------------------------
-    // Test 6: Role-Based Access Control (RBAC)
+    // Test 6: Role-Based Access Control (RBAC: FACULTY, AC, HOD, ADMIN)
     // ------------------------------------------------------------
-    console.log('\n--- Test 6: Role-Based Access Control (RBAC) ---');
+    console.log('\n--- Test 6: Role-Based Access Control (RBAC: FACULTY, AC, HOD, ADMIN) ---');
+    const facultyUser = await User.create({
+      name: 'Faculty Tester',
+      email: 'faculty_test@nec.edu.in',
+      passwordHash: hash,
+      role: 'FACULTY',
+      facultyId: 'FWL-03',
+      isActive: true,
+    });
+    const facultyToken = generateToken(facultyUser);
+
     const acUser = await User.create({
       name: 'AC Tester',
       email: 'ac_test@nec.edu.in',
@@ -212,7 +326,81 @@ async function runTests() {
     });
     const acToken = generateToken(acUser);
 
-    // Endpoint protected with HOD/ADMIN:
+    const adminUser = await User.create({
+      name: 'Admin Tester',
+      email: 'admin_test@nec.edu.in',
+      passwordHash: hash,
+      role: 'ADMIN',
+      facultyId: null,
+      isActive: true,
+    });
+    const adminToken = generateToken(adminUser);
+
+    // 6.1 FACULTY Permissions: Can access own schedule, workload, notifications, and submit absence
+    const facultyScheduleRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/timetable/faculty/FWL-03',
+    });
+    assert(facultyScheduleRes.statusCode === 200, 'Faculty schedule endpoint returns HTTP 200');
+
+    const facultyWorkloadRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/workload?facultyId=FWL-03',
+    });
+    assert(facultyWorkloadRes.statusCode === 200, 'Workload retrieval returns HTTP 200');
+
+    const facultyNotifRes = await makeRequest(app, {
+      method: 'GET',
+      path: '/api/notifications',
+      headers: { Authorization: `Bearer ${facultyToken}` },
+    });
+    assert(facultyNotifRes.statusCode === 200, 'Faculty can access notifications endpoint (HTTP 200)');
+
+    const facultyAbsenceSubmitRes = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/absences',
+      headers: { Authorization: `Bearer ${facultyToken}` },
+      body: {
+        facultyId: 'FWL-03',
+        date: '2026-10-15',
+        reason: 'Attending faculty development workshop',
+      },
+    });
+    assert(facultyAbsenceSubmitRes.statusCode === 201, 'Faculty can submit absence (HTTP 201)');
+    const testAbsenceId = facultyAbsenceSubmitRes.body.data._id;
+
+    // 6.2 FACULTY Restrictions: Blocked from HOD/ADMIN operations with HTTP 403
+    const facultyAdvisorBlocked = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/class-advisors',
+      headers: { Authorization: `Bearer ${facultyToken}` },
+      body: { academicContextId: new mongoose.Types.ObjectId(), facultyId: 'FWL-03' },
+    });
+    assert(facultyAdvisorBlocked.statusCode === 403, 'FACULTY is blocked from assigning class advisor (HTTP 403)');
+    assert(facultyAdvisorBlocked.body.code === 'FORBIDDEN', 'FACULTY forbidden error returns code FORBIDDEN');
+
+    const facultyAbsenceApproveBlocked = await makeRequest(app, {
+      method: 'PATCH',
+      path: `/api/absences/${testAbsenceId}/status`,
+      headers: { Authorization: `Bearer ${facultyToken}` },
+      body: { status: 'APPROVED' },
+    });
+    assert(facultyAbsenceApproveBlocked.statusCode === 403, 'FACULTY is blocked from approving absence (HTTP 403)');
+
+    // 6.3 AC Permissions: Can submit course candidate handlers
+    const acHandlerSubmit = await makeRequest(app, {
+      method: 'POST',
+      path: '/api/course-faculty-handlers',
+      headers: { Authorization: `Bearer ${acToken}` },
+      body: {
+        courseCode: '22CSC99',
+        candidates: ['FWL-03', 'FWL-04'],
+        priorityRanking: ['FWL-03', 'FWL-04'],
+      },
+    });
+    assert(acHandlerSubmit.statusCode === 201, 'AC can submit course faculty handlers (HTTP 201)');
+
+    // 6.4 AC Restrictions: Blocked from HOD-authoritative operations
     const advisorByAc = await makeRequest(app, {
       method: 'POST',
       path: '/api/class-advisors',
@@ -221,6 +409,43 @@ async function runTests() {
     });
     assert(advisorByAc.statusCode === 403, 'AC user attempting HOD action is blocked with HTTP 403 Forbidden');
     assert(advisorByAc.body.code === 'FORBIDDEN', 'Error code returned is FORBIDDEN');
+
+    const acAbsenceApproveBlocked = await makeRequest(app, {
+      method: 'PATCH',
+      path: `/api/absences/${testAbsenceId}/status`,
+      headers: { Authorization: `Bearer ${acToken}` },
+      body: { status: 'APPROVED' },
+    });
+    assert(acAbsenceApproveBlocked.statusCode === 403, 'AC is blocked from approving absence (HTTP 403)');
+
+    // 6.5 HOD Authority: Can approve absences and assignments
+    const hodAbsenceApproveRes = await makeRequest(app, {
+      method: 'PATCH',
+      path: `/api/absences/${testAbsenceId}/status`,
+      headers: { Authorization: `Bearer ${hodToken}` },
+      body: { status: 'APPROVED' },
+    });
+    assert(hodAbsenceApproveRes.statusCode === 200, 'HOD can approve faculty absence (HTTP 200)');
+    assert(hodAbsenceApproveRes.body.data.status === 'APPROVED', 'Absence status successfully marked APPROVED by HOD');
+
+    // 6.6 ADMIN Authority & Non-Admin restrictions
+    const hodDeleteFacultyBlocked = await makeRequest(app, {
+      method: 'DELETE',
+      path: '/api/faculty/FWL-NONEXISTENT',
+      headers: { Authorization: `Bearer ${hodToken}` },
+    });
+    assert(hodDeleteFacultyBlocked.statusCode === 403, 'HOD is blocked from ADMIN-only delete faculty (HTTP 403)');
+
+    const adminDeleteFacultyRes = await makeRequest(app, {
+      method: 'DELETE',
+      path: '/api/faculty/FWL-NONEXISTENT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert(adminDeleteFacultyRes.statusCode !== 403, 'ADMIN is authorized to invoke delete faculty (status !== 403)');
+
+    // Clean up temporary absence and handlers created in Test 6
+    await FacultyAbsence.findByIdAndDelete(testAbsenceId);
+    await CourseFacultyHandler.deleteOne({ courseCode: '22CSC99' });
 
     // ------------------------------------------------------------
     // Test 7: Faculty Master Retrieval & Preservation
@@ -478,7 +703,18 @@ async function runTests() {
     assert(fwl04After.calculatedTotalHours === fwl04.calculatedTotalHours, 'Faculty workload hours remain unaltered after substitution');
 
     // Clean up test data
-    await User.deleteMany({ email: { $in: ['test_auth@nec.edu.in', 'ac_test@nec.edu.in'] } });
+    await User.deleteMany({
+      email: {
+        $in: [
+          'test_auth@nec.edu.in',
+          'test_inactive@nec.edu.in',
+          'faculty_test@nec.edu.in',
+          'ac_test@nec.edu.in',
+          'hod_test@nec.edu.in',
+          'admin_test@nec.edu.in',
+        ],
+      },
+    });
     await TimetableSession.findByIdAndDelete(session._id);
     await TimetableVersion.findByIdAndDelete(ttVersion._id);
     await HODFacultyAllocation.findByIdAndDelete(allocation._id);

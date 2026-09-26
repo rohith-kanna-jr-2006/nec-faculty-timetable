@@ -3,6 +3,8 @@ import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
 
+import AccessDenied from '../pages/common/AccessDenied';
+
 export default function ProtectedRoute({ allowedRoles = null, children }) {
   const { isAuthenticated, user, isLoading, getDefaultDashboard } = useAuth();
   const location = useLocation();
@@ -34,13 +36,12 @@ export default function ProtectedRoute({ allowedRoles = null, children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If role is restricted and user's role is not authorized
+  // If role is restricted and user's role is not authorized, show explicit 403 Forbidden state
   if (allowedRoles && Array.isArray(allowedRoles) && !allowedRoles.includes(user.role)) {
     console.warn(
       `[ProtectedRoute] Access denied. User role '${user.role}' not permitted in: [${allowedRoles.join(', ')}]`
     );
-    const fallbackPath = getDefaultDashboard(user.role);
-    return <Navigate to={fallbackPath} replace />;
+    return <AccessDenied allowedRoles={allowedRoles} />;
   }
 
   return children ? children : <Outlet />;

@@ -16,6 +16,7 @@ import FacultyDashboardPlaceholder from '../pages/faculty/FacultyDashboardPlaceh
 import CoordinatorDashboardPlaceholder from '../pages/coordinator/CoordinatorDashboardPlaceholder';
 import HODDashboardPlaceholder from '../pages/hod/HODDashboardPlaceholder';
 import RoutePlaceholder from '../pages/common/RoutePlaceholder';
+import AccessDenied from '../pages/common/AccessDenied';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +27,8 @@ export default function AppRoutes() {
       {/* Public Authentication routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/access-denied" element={<AccessDenied />} />
+        <Route path="/403" element={<Navigate to="/access-denied" replace />} />
       </Route>
 
       {/* Protected Faculty Portal routes (FACULTY, ADMIN) */}

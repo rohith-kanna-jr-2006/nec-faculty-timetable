@@ -3,7 +3,18 @@
  * Verifies live API endpoints on http://localhost:5000/api and client auth logic.
  */
 
-const BASE_URL = process.env.API_URL || 'http://localhost:5000/api';
+const BASE_URL = process.env.API_URL || 'http://127.0.0.1:5000/api';
+
+// Provide standard localStorage shim if running directly under Node.js CLI
+if (typeof global.localStorage === 'undefined') {
+  const store = new Map();
+  global.localStorage = {
+    getItem: (key) => store.get(key) || null,
+    setItem: (key, val) => store.set(key, String(val)),
+    removeItem: (key) => store.delete(key),
+    clear: () => store.clear(),
+  };
+}
 
 let totalTests = 0;
 let passedTests = 0;
@@ -191,11 +202,44 @@ async function runAuthTests() {
   }
 
   // Test 11: Client-Side Default Dashboard Role Redirection Mapping
-  const { getDefaultDashboard } = await import('../src/services/authService.js');
+  const { getDefaultDashboard, login: clientLogin, logout: clientLogout, getStoredToken, getStoredUser } = await import('../src/services/authService.js');
   assert(getDefaultDashboard('FACULTY') === '/faculty/dashboard', 'Role FACULTY maps to /faculty/dashboard');
   assert(getDefaultDashboard('AC') === '/coordinator/dashboard', 'Role AC maps to /coordinator/dashboard');
   assert(getDefaultDashboard('HOD') === '/hod/dashboard', 'Role HOD maps to /hod/dashboard');
   assert(getDefaultDashboard('ADMIN') === '/hod/dashboard', 'Role ADMIN maps to /hod/dashboard');
+
+  // Test 12: Client-Side AuthService Login & Logout Flow
+  try {
+    const loginResult = await clientLogin('hod@nec.edu.in', 'Password123!');
+    assert(Boolean(loginResult.token), 'AuthService login returns valid token');
+    assert(loginResult.user?.role === 'HOD', 'AuthService login stores HOD user');
+    assert(getStoredToken() === loginResult.token, 'AuthService persists token in localStorage');
+    assert(getStoredUser()?.email === 'hod@nec.edu.in', 'AuthService persists user in localStorage');
+
+    clientLogout();
+    assert(getStoredToken() === null, 'AuthService logout clears stored token');
+    assert(getStoredUser() === null, 'AuthService logout clears stored user');
+  } catch (err) {
+    assert(false, `AuthService flow error: ${err.message}`);
+  }
+
+  // Test 13: Expired Token Rejection
+  try {
+    // Deliberately expired token payload (exp: 1 second in the past)
+    const expiredTokenHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+    const expiredPayload = Buffer.from(
+      JSON.stringify({ id: '6ab75eddb243870f527e4214', exp: Math.floor(Date.now() / 1000) - 100 })
+    ).toString('base64url');
+    // Using dummy signature; verification fails due to expiration or signature
+    const dummyExpiredToken = `${expiredTokenHeader}.${expiredPayload}.invalidsignature`;
+    const expiredRes = await fetch(`${BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${dummyExpiredToken}` },
+    });
+    assert(expiredRes.status === 401, 'Expired/tampered token correctly rejected with HTTP 401');
+  } catch (err) {
+    assert(false, `Expired token test error: ${err.message}`);
+  }
 
   console.log('\n====================================================');
   console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Passed (${failedTests} Failed)`);

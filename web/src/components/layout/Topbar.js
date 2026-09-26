@@ -40,29 +40,35 @@ export default function Topbar({ unreadCount = 3 }) {
 
       {/* Right: Portal Switcher, Notifications & Authenticated Profile */}
       <div className="ui-topbar-right">
-        {/* Portal Switcher for Multi-Role Nav */}
+        {/* Portal Switcher for Multi-Role Nav (Authorized Portals Only) */}
         <div style={{ display: 'flex', gap: 6 }}>
-          <NavLink
-            to="/faculty/dashboard"
-            className="btn btn-subtle btn-sm"
-            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-          >
-            Faculty
-          </NavLink>
-          <NavLink
-            to="/coordinator/dashboard"
-            className="btn btn-subtle btn-sm"
-            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-          >
-            Coord
-          </NavLink>
-          <NavLink
-            to="/hod/dashboard"
-            className="btn btn-subtle btn-sm"
-            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-          >
-            HOD
-          </NavLink>
+          {(user?.role === 'FACULTY' || user?.role === 'ADMIN') && (
+            <NavLink
+              to="/faculty/dashboard"
+              className="btn btn-subtle btn-sm"
+              style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+            >
+              Faculty
+            </NavLink>
+          )}
+          {(user?.role === 'AC' || user?.role === 'ADMIN') && (
+            <NavLink
+              to="/coordinator/dashboard"
+              className="btn btn-subtle btn-sm"
+              style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+            >
+              Coord
+            </NavLink>
+          )}
+          {(user?.role === 'HOD' || user?.role === 'ADMIN') && (
+            <NavLink
+              to="/hod/dashboard"
+              className="btn btn-subtle btn-sm"
+              style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+            >
+              HOD
+            </NavLink>
+          )}
         </div>
 
         {/* Notifications Icon Button */}

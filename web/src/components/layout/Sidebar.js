@@ -45,6 +45,8 @@ export default function Sidebar({
             title: 'STATUTORY EXECUTIVE',
             items: [
               { label: 'Executive Dashboard', path: '/hod/dashboard', icon: '🏛️' },
+              { label: 'Faculty Directory', path: '/hod/faculty', icon: '👥' },
+              { label: 'Add New Faculty', path: '/hod/faculty/add', icon: '➕' },
               { label: 'Academic Context', path: '/hod/context', icon: '📋' },
             ],
           },

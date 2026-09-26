@@ -16,6 +16,11 @@ import FacultyDashboardPlaceholder from '../pages/faculty/FacultyDashboardPlaceh
 import CoordinatorDashboardPlaceholder from '../pages/coordinator/CoordinatorDashboardPlaceholder';
 import HODDashboardPlaceholder from '../pages/hod/HODDashboardPlaceholder';
 import RoutePlaceholder from '../pages/common/RoutePlaceholder';
+import AccessDenied from '../pages/common/AccessDenied';
+import MyTimetablePage from '../pages/faculty/MyTimetablePage';
+import WeeklyTimetablePage from '../pages/faculty/WeeklyTimetablePage';
+import FacultyListPage from '../pages/hod/FacultyListPage';
+import AddFacultyPage from '../pages/hod/AddFacultyPage';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +31,8 @@ export default function AppRoutes() {
       {/* Public Authentication routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/access-denied" element={<AccessDenied />} />
+        <Route path="/403" element={<Navigate to="/access-denied" replace />} />
       </Route>
 
       {/* Protected Faculty Portal routes (FACULTY, ADMIN) */}
@@ -33,28 +40,8 @@ export default function AppRoutes() {
         <Route path="/faculty" element={<FacultyLayout />}>
           <Route index element={<Navigate to="/faculty/dashboard" replace />} />
           <Route path="dashboard" element={<FacultyDashboardPlaceholder />} />
-          <Route
-            path="timetable"
-            element={
-              <RoutePlaceholder
-                title="My Timetable"
-                section="Faculty Portal"
-                phaseTarget="Phase 3"
-                description="Personal day-by-day timetable and lecture session card timeline."
-              />
-            }
-          />
-          <Route
-            path="weekly-timetable"
-            element={
-              <RoutePlaceholder
-                title="Weekly Matrix Timetable"
-                section="Faculty Portal"
-                phaseTarget="Phase 3"
-                description="Full 2D desktop matrix (P1–P7, Monday–Friday) with continuous lab blocks."
-              />
-            }
-          />
+          <Route path="timetable" element={<MyTimetablePage />} />
+          <Route path="weekly-timetable" element={<WeeklyTimetablePage />} />
           <Route
             path="workload"
             element={
@@ -203,6 +190,8 @@ export default function AppRoutes() {
         <Route path="/hod" element={<HODLayout />}>
           <Route index element={<Navigate to="/hod/dashboard" replace />} />
           <Route path="dashboard" element={<HODDashboardPlaceholder />} />
+          <Route path="faculty" element={<FacultyListPage />} />
+          <Route path="faculty/add" element={<AddFacultyPage />} />
           <Route
             path="context"
             element={

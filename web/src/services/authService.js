@@ -63,7 +63,16 @@ export async function login(email, password) {
     throw new Error(response?.message || 'Authentication failed. Please check credentials.');
   }
 
-  const { token, user } = response.data;
+  const token = response.data.token;
+  const user = response.data.user ? { ...response.data.user } : { ...response.data };
+
+  // Guarantee role and facultyId are preserved without loss
+  if (response.data.role && !user.role) {
+    user.role = response.data.role;
+  }
+  if (response.data.facultyId && !user.facultyId) {
+    user.facultyId = response.data.facultyId;
+  }
 
   // Persist token and user in client storage
   setAuthToken(token);
@@ -86,7 +95,16 @@ export async function getMe() {
     throw new Error('Failed to retrieve user profile.');
   }
 
-  const user = response.data.user || response.data;
+  const rawUser = response.data.user || response.data;
+  const user = { ...rawUser };
+
+  if (response.data.role && !user.role) {
+    user.role = response.data.role;
+  }
+  if (response.data.facultyId && !user.facultyId) {
+    user.facultyId = response.data.facultyId;
+  }
+
   setStoredUser(user);
   return user;
 }

@@ -24,8 +24,18 @@ const teachingItemSchema = new mongoose.Schema(
     },
     hours: {
       type: Number,
-      required: true,
+      default: null,
       min: 0,
+    },
+    year: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    section: {
+      type: String,
+      default: null,
+      trim: true,
     },
   },
   { _id: false }
@@ -50,8 +60,24 @@ const responsibilityItemSchema = new mongoose.Schema(
     },
     hours: {
       type: Number,
-      required: true,
+      default: null,
       min: 0,
+    },
+    responsibilityType: {
+      type: String,
+      enum: ['Academic', 'Administrative', 'Coordination', 'Institutional', 'Other'],
+      default: 'Institutional',
+      trim: true,
+    },
+    year: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    section: {
+      type: String,
+      default: null,
+      trim: true,
     },
   },
   { _id: false }
@@ -75,6 +101,12 @@ const facultyWorkloadSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Designation is required'],
       trim: true,
+    },
+    department: {
+      type: String,
+      default: 'Department of Computer Science and Engineering',
+      trim: true,
+      index: true,
     },
     teaching: {
       ugTheory1: { type: [teachingItemSchema], default: [] },

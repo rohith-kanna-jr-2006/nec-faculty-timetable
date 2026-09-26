@@ -52,13 +52,13 @@ console.log('FACULTY WORKLOAD ALLOCATION MASTER MODULE: 14 TEST SUITES');
 console.log('============================================================\n');
 
 // ------------------------------------------------------------
-// 1. Exactly 28 Faculty Records
+// 1. Exactly 27 Faculty Records
 // ------------------------------------------------------------
-console.log('--- Test 1: Exactly 28 Faculty Records ---');
-assert(FACULTY_WORKLOAD_MASTER.length === 28, 'FACULTY_WORKLOAD_MASTER contains exactly 28 records');
-assert(FACULTY_WORKLOAD_SOURCE.length === 28, 'FACULTY_WORKLOAD_SOURCE alias contains exactly 28 records');
+console.log('--- Test 1: Exactly 27 Faculty Records (25 CSE, 2 ECE) ---');
+assert(FACULTY_WORKLOAD_MASTER.length === 27, 'FACULTY_WORKLOAD_MASTER contains exactly 27 records');
+assert(FACULTY_WORKLOAD_SOURCE.length === 27, 'FACULTY_WORKLOAD_SOURCE alias contains exactly 27 records');
 const processed = getWorkloadMaster();
-assert(processed.length === 28, 'getWorkloadMaster() returns exactly 28 processed records');
+assert(processed.length === 27, 'getWorkloadMaster() returns exactly 27 processed records');
 
 // ------------------------------------------------------------
 // 2. Every Faculty Name Exists
@@ -92,7 +92,6 @@ const EXPECTED_FACULTY = [
   { id: 'FWL-25', name: 'Ms. M. Sowmya', designation: 'AP', sourceTotal: 22 },
   { id: 'FWL-26', name: 'Dr. R. Praveenkumar', designation: 'ASP / ECE', sourceTotal: 18 },
   { id: 'FWL-27', name: 'Ms. B. Preethi', designation: 'AP / ECE', sourceTotal: 17 },
-  { id: 'FWL-28', name: 'Mr. P. Jaishankar', designation: 'AP / Maths', sourceTotal: null },
 ];
 
 EXPECTED_FACULTY.forEach((exp, idx) => {
@@ -165,10 +164,17 @@ processed.forEach((f) => {
     });
   });
   f.responsibilities.forEach((r) => {
-    assert(
-      typeof r.hours === 'number' && r.hours >= 0,
-      `${f.facultyName} - Responsibility (${r.role}): hours is valid number (${r.hours})`
-    );
+    if (f.facultyName.includes('Satheesh Kumar') && r.role === 'TECH GURU') {
+      assert(
+        r.hours === null,
+        `${f.facultyName} - Responsibility (${r.role}): hours is null (preserved faithfully as unstated in source)`
+      );
+    } else {
+      assert(
+        typeof r.hours === 'number' && r.hours >= 0,
+        `${f.facultyName} - Responsibility (${r.role}): hours is valid number (${r.hours})`
+      );
+    }
     validHoursCount++;
   });
 });
@@ -251,10 +257,10 @@ processed.forEach((f) => {
 });
 
 const metrics = getWorkloadSummaryMetrics();
-assert(metrics.totalFaculty === 28, 'Dashboard metrics totalFaculty is 28');
+assert(metrics.totalFaculty === 27, 'Dashboard metrics totalFaculty is 27');
 assert(metrics.totalAllocatedHours === metrics.totalTeachingHours + metrics.totalResponsibilityHours, 'Total allocated hours equals teaching + responsibilities');
 assert(metrics.completeCount === 26, '26 records complete and matched');
-assert(metrics.incompleteCount === 2, '2 records incomplete source data');
+assert(metrics.incompleteCount === 1, '1 record incomplete source data (Mrs. A. Satheesh Kumar)');
 assert(metrics.discrepancyCount === 0, '0 records review required');
 
 // ------------------------------------------------------------
@@ -271,17 +277,9 @@ assert(
   satheesh.responsibilities.some((r) => r.role === 'TECH GURU'),
   'Mrs. A. Satheesh Kumar preserves TECH GURU responsibility'
 );
-
-const jaishankar = processed.find((f) => f.facultyName === 'Mr. P. Jaishankar');
-assert(jaishankar !== undefined, 'Mr. P. Jaishankar record exists');
-assert(jaishankar.designation === 'AP / Maths', 'Mr. P. Jaishankar designation is AP / Maths');
-assert(jaishankar.status === 'INCOMPLETE SOURCE DATA', 'Mr. P. Jaishankar marked INCOMPLETE SOURCE DATA');
-assert(jaishankar.sourceTotalHours === null, 'Mr. P. Jaishankar sourceTotalHours is null (not artificially inferred)');
 assert(
-  jaishankar.teaching.ugTheory1.length === 1 &&
-    jaishankar.teaching.ugTheory1[0].courseCode === '22MYB05' &&
-    jaishankar.teaching.ugTheory1[0].hours === 4,
-  'Mr. P. Jaishankar preserves 22MYB05 Discrete Mathematics BSC with 4 hours'
+  satheesh.responsibilities.find((r) => r.role === 'TECH GURU').hours === null,
+  'Mrs. A. Satheesh Kumar TECH GURU responsibility hours is null (not guessed to 0)'
 );
 
 // ------------------------------------------------------------
@@ -312,7 +310,7 @@ processed.forEach((f) => {
     seenResp.add(key);
   });
 });
-assert(duplicateCount === 0, 'No duplicate identical workload rows exist across all 28 faculty records');
+assert(duplicateCount === 0, 'No duplicate identical workload rows exist across all 27 faculty records');
 
 // ------------------------------------------------------------
 // 11. Search Works
@@ -351,7 +349,7 @@ const fMatched = searchAndFilterWorkload({ statusFilter: 'MATCHED' });
 assert(fMatched.length === 26, 'Filter MATCHED returns exactly 26 records');
 
 const fIncomplete = searchAndFilterWorkload({ statusFilter: 'INCOMPLETE SOURCE DATA' });
-assert(fIncomplete.length === 2, 'Filter INCOMPLETE SOURCE DATA returns exactly 2 records');
+assert(fIncomplete.length === 1, 'Filter INCOMPLETE SOURCE DATA returns exactly 1 record');
 
 const fReview = searchAndFilterWorkload({ statusFilter: 'REVIEW REQUIRED' });
 assert(fReview.length === 0, 'Filter REVIEW REQUIRED returns 0 records (no arithmetic discrepancies)');
@@ -393,8 +391,8 @@ assert(fOthers.length > 0, `Category filter OTHERS returns ${fOthers.length} fac
 // ------------------------------------------------------------
 console.log('\n--- Test 13: Faculty Detail Lookup & Validation Works ---');
 
-// Test retrieval for all 28 IDs
-for (let i = 1; i <= 28; i++) {
+// Test retrieval for all 27 IDs
+for (let i = 1; i <= 27; i++) {
   const fwlId = `FWL-${String(i).padStart(2, '0')}`;
   const detail = getFacultyWorkloadById(fwlId);
   assert(detail !== null, `getFacultyWorkloadById("${fwlId}") successfully returns profile`);

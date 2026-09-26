@@ -1,7 +1,7 @@
 /**
  * Faculty Workload Allocation Master Dataset & Services
  *
- * Authoritative Register of Current Faculty Workloads (28 Faculty Members).
+ * Authoritative Register of Current Faculty Workloads (27 Faculty Members: 25 CSE, 2 ECE).
  * Represents row-level teaching allocations and independent institutional responsibilities.
  *
  * NOTE: This is a standalone Master Faculty Workload Register.
@@ -1422,7 +1422,7 @@ export const FACULTY_WORKLOAD_MASTER = [
         category: 'RESPONSIBILITY',
         role: 'TECH GURU',
         allocation: 'Source allocation: TECH GURU',
-        hours: 0,
+        hours: null, // NOT SPECIFIED / NOT LEGIBLE IN SOURCE (DO NOT GUESS 0)
       },
     ],
     sourceTotalHours: null, // NOT SPECIFIED / NOT LEGIBLE IN SOURCE
@@ -1963,31 +1963,6 @@ export const FACULTY_WORKLOAD_MASTER = [
     ],
     sourceTotalHours: 17,
   },
-  {
-    facultyId: 'FWL-28',
-    facultyName: 'Mr. P. Jaishankar',
-    designation: 'AP / Maths',
-    teaching: {
-      ugTheory1: [
-        {
-          category: 'UG Theory 1',
-          courseCode: '22MYB05',
-          courseName: 'Discrete Mathematics BSC',
-          allocation: 'BSC',
-          hours: 4,
-        },
-      ],
-      ugTheory2: [],
-      lab1: [],
-      lab2: [],
-      pg: [],
-      others: [],
-    },
-    responsibilities: [],
-    sourceTotalHours: null, // Only supplies this workload item; source total not provided
-    isIncomplete: true,
-    incompleteReason: 'Only single course item provided in source; total weekly hours not specified.',
-  },
 ];
 
 // ------------------------------------------------------------
@@ -2265,19 +2240,18 @@ export const FACULTY_WORKLOAD_SOURCE = FACULTY_WORKLOAD_MASTER;
 
 /**
  * Authoritative CSE Faculty Directory for HOD Workflows.
- * Derived from FACULTY_WORKLOAD_MASTER.
+ * Derived from FACULTY_WORKLOAD_MASTER (27 Faculty: 25 CSE, 2 ECE).
  * Excludes non-CSE faculty:
  * - Dr. R. Praveenkumar — ASP / ECE (FWL-26)
  * - Ms. B. Preethi — AP / ECE (FWL-27)
- * - Mr. P. Jaishankar — AP / Maths (FWL-28)
  *
  * Preserves exact source values: facultyId, facultyName, designation.
  * Exposes calculated workload totals: calculatedTeachingHours, calculatedResponsibilityHours, calculatedTotalHours, status.
  * Leaves raw FACULTY_WORKLOAD_MASTER completely untouched.
  */
 export function getCSEFacultyFromWorkload() {
-  const NON_CSE_IDS = new Set(['FWL-26', 'FWL-27', 'FWL-28']);
-  const NON_CSE_DESIGNATIONS = ['ASP / ECE', 'AP / ECE', 'AP / Maths'];
+  const NON_CSE_IDS = new Set(['FWL-26', 'FWL-27']);
+  const NON_CSE_DESIGNATIONS = ['ASP / ECE', 'AP / ECE'];
 
   return getWorkloadMaster().filter((faculty) => {
     if (NON_CSE_IDS.has(faculty.facultyId)) return false;

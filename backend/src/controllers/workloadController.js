@@ -2,7 +2,13 @@ const FacultyWorkload = require('../models/FacultyWorkload');
 const {
   processWorkloadCalculations,
   getDynamicSummaryMetrics,
+  formatFacultyAllocations,
+  calculateTeachingHours,
+  calculateResponsibilityHours,
+  parseYearAndSection,
+  classifyResponsibility,
 } = require('../services/workloadService');
+const { getCanonicalRoleName } = require('../constants/responsibilityMaster');
 const { successResponse, errorResponse } = require('../utils/responseHandler');
 const { getPaginationParams, formatPaginatedResult } = require('../utils/pagination');
 
@@ -197,18 +203,96 @@ async function updateWorkload(req, res, next) {
       return errorResponse(res, `Workload record for faculty '${facultyId}' not found`, 404, 'NOT_FOUND');
     }
 
-    // Merge new updates
-    const merged = {
-      ...record.toObject(),
-      ...req.body,
+    const normalizeTeachingItem = (item, defaultCategory) => {
+      const parsed = parseYearAndSection(item.allocation);
+      return {
+        category: item.category || defaultCategory,
+        courseCode: item.courseCode ? item.courseCode.trim() : null,
+        courseName: item.courseName ? item.courseName.trim() : '',
+        allocation: item.allocation ? item.allocation.trim() : null,
+        hours: typeof item.hours === 'number' ? item.hours : 0,
+        year: item.year ? item.year.trim() : parsed.year,
+        section: item.section ? item.section.trim() : parsed.section,
+      };
     };
 
-    const calculated = processWorkloadCalculations(merged);
+    let updatedTeaching = record.teaching;
+    if (req.body.teaching) {
+      const raw = req.body.teaching;
+      updatedTeaching = {
+        ugTheory1: (raw.ugTheory1 || []).map((i) => normalizeTeachingItem(i, 'UG Theory 1')),
+        ugTheory2: (raw.ugTheory2 || []).map((i) => normalizeTeachingItem(i, 'UG Theory 2')),
+        lab1: (raw.lab1 || []).map((i) => normalizeTeachingItem(i, 'Lab 1')),
+        lab2: (raw.lab2 || []).map((i) => normalizeTeachingItem(i, 'Lab 2')),
+        pg: (raw.pg || []).map((i) => {
+          const item = normalizeTeachingItem(i, 'PG');
+          item.hours = i.hours !== undefined && i.hours !== null ? i.hours : 1;
+          return item;
+        }),
+        others: (raw.others || []).map((i) => normalizeTeachingItem(i, 'Others')),
+      };
+    }
 
-    Object.assign(record, req.body, calculated);
+    let updatedResponsibilities = record.responsibilities;
+    if (req.body.responsibilities) {
+      updatedResponsibilities = req.body.responsibilities.map((item) => {
+        const canonicalRole = getCanonicalRoleName(item.role);
+        const parsed = parseYearAndSection(item.allocation);
+        const type = item.responsibilityType || classifyResponsibility(canonicalRole);
+        return {
+          category: item.category || 'RESPONSIBILITY',
+          role: canonicalRole,
+          allocation: item.allocation ? item.allocation.trim() : null,
+          hours: typeof item.hours === 'number' ? item.hours : null,
+          responsibilityType: type,
+          year: item.year ? item.year.trim() : parsed.year,
+          section: item.section ? item.section.trim() : parsed.section,
+        };
+      });
+    }
+
+    const calculatedTeachingHours = calculateTeachingHours(updatedTeaching);
+    const calculatedResponsibilityHours = calculateResponsibilityHours(updatedResponsibilities);
+    const calculatedTotalHours = calculatedTeachingHours + calculatedResponsibilityHours;
+
+    let sourceTotalHours;
+    if (req.body.sourceTotalHours !== undefined) {
+      sourceTotalHours = req.body.sourceTotalHours !== null ? Number(req.body.sourceTotalHours) : null;
+    } else if (record.sourceTotalHours === record.calculatedTotalHours || record.sourceTotalHours === null || record.sourceTotalHours === undefined) {
+      sourceTotalHours = calculatedTotalHours;
+    } else {
+      sourceTotalHours = Number(record.sourceTotalHours);
+    }
+
+    const status = sourceTotalHours === calculatedTotalHours ? 'MATCHED' : 'REVIEW REQUIRED';
+    const discrepancyNote =
+      sourceTotalHours !== calculatedTotalHours
+        ? `Source total (${sourceTotalHours}h) does not match calculated total (${calculatedTotalHours}h). Difference: ${Math.abs(
+            sourceTotalHours - calculatedTotalHours
+          )}h.`
+        : null;
+
+    record.teaching = updatedTeaching;
+    record.responsibilities = updatedResponsibilities;
+    record.calculatedTeachingHours = calculatedTeachingHours;
+    record.calculatedResponsibilityHours = calculatedResponsibilityHours;
+    record.calculatedTotalHours = calculatedTotalHours;
+    record.sourceTotalHours = sourceTotalHours;
+    record.status = status;
+    record.discrepancyNote = discrepancyNote;
+    if (req.body.facultyName) record.facultyName = req.body.facultyName.trim();
+    if (req.body.designation) record.designation = req.body.designation.trim();
+
     await record.save();
 
-    return successResponse(res, record);
+    const formatted = formatFacultyAllocations(record);
+    return successResponse(res, {
+      ...record.toObject(),
+      summary: formatted.summary,
+      teachingLoad: formatted.teachingLoad,
+      responsibilities: formatted.responsibilities,
+      allocations: formatted.allocations,
+    });
   } catch (error) {
     next(error);
   }
@@ -233,12 +317,41 @@ async function deleteWorkload(req, res, next) {
   }
 }
 
+/**
+ * Get structured allocations for a faculty member
+ * GET /api/workload/:facultyId/allocations
+ */
+async function getFacultyAllocations(req, res, next) {
+  try {
+    const { facultyId } = req.params;
+    const { category, year, section, courseCode, allocationType } = req.query;
+
+    const record = await FacultyWorkload.findOne({ facultyId });
+    if (!record) {
+      return errorResponse(res, `Workload record for faculty '${facultyId}' not found`, 404, 'NOT_FOUND');
+    }
+
+    const formatted = formatFacultyAllocations(record, {
+      category,
+      year,
+      section,
+      courseCode,
+      allocationType,
+    });
+
+    return successResponse(res, formatted);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getWorkloadList,
   getWorkloadSummary,
   getWorkloadDiscrepancies,
   getWorkloadIncomplete,
   getWorkloadById,
+  getFacultyAllocations,
   createWorkload,
   updateWorkload,
   deleteWorkload,

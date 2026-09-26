@@ -100,7 +100,7 @@ check(incompleteSatheesh && incompleteSatheesh.status === 'INCOMPLETE SOURCE DAT
 check(incompleteSatheesh && incompleteSatheesh.sourceTotalHours === null, 'Mrs. A. Satheesh Kumar sourceTotalHours is null (no fake totals inferred)');
 
 // Verify raw master records untouched
-check(FACULTY_WORKLOAD_MASTER.length === 28, 'Raw FACULTY_WORKLOAD_MASTER remains 28 records untouched');
+check(FACULTY_WORKLOAD_MASTER.length === 27, 'Raw FACULTY_WORKLOAD_MASTER remains 27 records untouched');
 
 // ------------------------------------------------------------
 // Test Group 2: Class Advisor Assignment & Conflict Protection

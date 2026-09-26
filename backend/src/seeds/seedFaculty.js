@@ -25,11 +25,16 @@ async function seedFaculty() {
     const cleanName = f.facultyName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const email = `${cleanName}@nec.edu.in`;
 
+    const isECE = f.facultyId === 'FWL-26' || f.facultyId === 'FWL-27' || (f.designation || '').includes('ECE');
+    const department = isECE
+      ? 'Department of Electronics and Communication Engineering'
+      : 'Department of Computer Science and Engineering';
+
     return {
       facultyId: f.facultyId,
       facultyName: f.facultyName, // Exact spelling preserved (e.g. Dr. S. Karpusamy)
       designation: f.designation,
-      department: 'Department of Computer Science and Engineering',
+      department,
       email,
       phone: null,
       roles,
@@ -39,7 +44,10 @@ async function seedFaculty() {
 
   await Faculty.deleteMany({});
   const inserted = await Faculty.insertMany(facultyDocs);
-  console.log(`[Seed] Successfully seeded ${inserted.length} faculty members.`);
+  console.log(`[Seed] Successfully seeded ${inserted.length} faculty members (25 CSE, 2 ECE).`);
+  if (inserted.length !== 27) {
+    throw new Error(`Expected exactly 27 faculty records, but seeded: ${inserted.length}`);
+  }
   return inserted;
 }
 

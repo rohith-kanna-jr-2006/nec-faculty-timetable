@@ -1,88 +1,187 @@
 /**
- * Faculty Management & Workload Allocation Service
- * Wraps centralized API client for /api/faculty endpoints.
+ * NEC Faculty Timetable & Workload Management System
+ * Faculty Service - Frontend API integration for faculty operations
+ * This service handles all faculty-related API calls.
+ * Backend contract: Pending Ragul's implementation
  */
 
-import { api } from './api';
+import api from './api.js';
+
+// API Endpoints - These will be confirmed with Ragul's backend
+const FACULTY_ENDPOINTS = {
+  LIST: '/faculty',
+  CREATE: '/faculty',
+  GET_BY_ID: '/faculty/',
+  UPDATE: '/faculty/',
+  DELETE: '/faculty/',
+  WORKLOAD: '/faculty/workload/',
+};
 
 /**
- * Fetch paginated or filtered list of faculty members.
- * GET /api/faculty
+ * Get all faculty members
+ * @param {Object} params - Query parameters (department, status, etc.)
+ * @returns {Promise<Array>} List of faculty
  */
-export async function getFacultyList(params = {}) {
-  const query = new URLSearchParams();
-  if (params.search) query.append('search', params.search);
-  if (params.department) query.append('department', params.department);
-  if (params.role) query.append('role', params.role);
-  if (params.page) query.append('page', params.page);
-  if (params.limit) query.append('limit', params.limit);
-
-  const qs = query.toString();
-  const endpoint = `/faculty${qs ? `?${qs}` : ''}`;
-  const response = await api.get(endpoint);
-  return response?.data || response;
+export async function getAllFaculty(params = {}) {
+  try {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `${FACULTY_ENDPOINTS.LIST}?${queryString}` : FACULTY_ENDPOINTS.LIST;
+    return await api.get(endpoint);
+  } catch (error) {
+    console.error('[facultyService] Failed to fetch faculty list:', error);
+    throw error;
+  }
 }
 
 /**
- * Fetch single faculty member by ID.
- * GET /api/faculty/:facultyId
+ * Get a single faculty member by ID
+ * @param {string} facultyId - Faculty ID
+ * @returns {Promise<Object>} Faculty details
  */
 export async function getFacultyById(facultyId) {
-  const response = await api.get(`/faculty/${encodeURIComponent(facultyId)}`);
-  return response?.data || response;
+  try {
+    return await api.get(`${FACULTY_ENDPOINTS.GET_BY_ID}${facultyId}`);
+  } catch (error) {
+    console.error('[facultyService] Failed to fetch faculty:', error);
+    throw error;
+  }
 }
 
 /**
- * Fetch structured allocations and workload summary for a faculty member.
- * GET /api/faculty/:facultyId/allocations
+ * Create a new faculty member with workload allocation
+ * @param {Object} facultyData - Faculty data including workload
+ * @returns {Promise<Object>} Created faculty
  */
-export async function getFacultyAllocations(facultyId, filters = {}) {
-  const query = new URLSearchParams();
-  if (filters.category) query.append('category', filters.category);
-  if (filters.year) query.append('year', filters.year);
-  if (filters.section) query.append('section', filters.section);
-
-  const qs = query.toString();
-  const endpoint = `/faculty/${encodeURIComponent(facultyId)}/allocations${qs ? `?${qs}` : ''}`;
-  const response = await api.get(endpoint);
-  return response?.data || response;
+export async function createFaculty(facultyData) {
+  try {
+    const response = await api.post(FACULTY_ENDPOINTS.CREATE, facultyData);
+    return response;
+  } catch (error) {
+    console.error('[facultyService] Failed to create faculty:', error);
+    throw error;
+  }
 }
 
 /**
- * Submit new CSE faculty creation and workload allocation.
- * POST /api/faculty
- *
- * Senders: HOD, ADMIN
- * Backend calculates authoritative workload totals and returns 201 Created.
+ * Update an existing faculty member
+ * @param {string} facultyId - Faculty ID
+ * @param {Object} facultyData - Updated faculty data
+ * @returns {Promise<Object>} Updated faculty
  */
-export async function createFaculty(payload) {
-  const response = await api.post('/faculty', payload);
-  return response?.data || response;
+export async function updateFaculty(facultyId, facultyData) {
+  try {
+    return await api.put(`${FACULTY_ENDPOINTS.UPDATE}${facultyId}`, facultyData);
+  } catch (error) {
+    console.error('[facultyService] Failed to update faculty:', error);
+    throw error;
+  }
 }
 
 /**
- * Update existing faculty profile.
- * PUT /api/faculty/:facultyId
- */
-export async function updateFaculty(facultyId, payload) {
-  const response = await api.put(`/faculty/${encodeURIComponent(facultyId)}`, payload);
-  return response?.data || response;
-}
-
-/**
- * Delete a faculty profile.
- * DELETE /api/faculty/:facultyId
+ * Delete a faculty member
+ * @param {string} facultyId - Faculty ID
+ * @returns {Promise<Object>} Deletion confirmation
  */
 export async function deleteFaculty(facultyId) {
-  const response = await api.delete(`/faculty/${encodeURIComponent(facultyId)}`);
-  return response?.data || response;
+  try {
+    return await api.delete(`${FACULTY_ENDPOINTS.DELETE}${facultyId}`);
+  } catch (error) {
+    console.error('[facultyService] Failed to delete faculty:', error);
+    throw error;
+  }
 }
 
-export default {
-  getFacultyList,
+/**
+ * Get faculty workload details
+ * @param {string} facultyId - Faculty ID
+ * @returns {Promise<Object>} Workload details
+ */
+export async function getFacultyWorkload(facultyId) {
+  try {
+    return await api.get(`${FACULTY_ENDPOINTS.WORKLOAD}${facultyId}`);
+  } catch (error) {
+    console.error('[facultyService] Failed to fetch workload:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update faculty workload allocation
+ * @param {string} facultyId - Faculty ID
+ * @param {Object} workloadData - Workload allocation data
+ * @returns {Promise<Object>} Updated workload
+ */
+export async function updateFacultyWorkload(facultyId, workloadData) {
+  try {
+    return await api.put(`${FACULTY_ENDPOINTS.WORKLOAD}${facultyId}`, workloadData);
+  } catch (error) {
+    console.error('[facultyService] Failed to update workload:', error);
+    throw error;
+  }
+}
+
+// Faculty form data structure for frontend use
+export const FACULTY_FORM_STRUCTURE = {
+  // Basic Information
+  basicInfo: {
+    name: '',
+    designation: '',
+    department: 'CSE',
+    email: '',
+    facultyId: '',
+    activeStatus: true,
+  },
+  // UG Theory Allocations
+  ugTheory: [
+    { courseCode: '', courseName: '', year: '', section: '', hours: 0 },
+    { courseCode: '', courseName: '', year: '', section: '', hours: 0 },
+  ],
+  // Lab Allocations
+  labs: [
+    { courseCode: '', courseName: '', year: '', section: '', hours: 0 },
+    { courseCode: '', courseName: '', year: '', section: '', hours: 0 },
+  ],
+  // PG / Honours / Minor
+  pgHonoursMinor: [],
+  // Others
+  others: { name: '', hours: 1 },
+  // Other Responsibilities
+  responsibilities: [],
+};
+
+// Validation rules
+export const FACULTY_VALIDATION = {
+  basicInfo: {
+    name: { required: true, minLength: 2, maxLength: 100 },
+    designation: { required: true, minLength: 2, maxLength: 100 },
+    department: { required: true },
+    email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+    facultyId: { required: true, minLength: 2, maxLength: 20 },
+  },
+  ugTheory: {
+    hours: { min: 0, max: 10 },
+  },
+  labs: {
+    hours: { min: 0, max: 10 },
+  },
+  others: {
+    hours: { min: 1, max: 3 },
+  },
+  responsibilities: {
+    hours: { min: 1, max: 6 },
+  },
+};
+
+export const facultyService = {
+  getAllFaculty,
   getFacultyById,
-  getFacultyAllocations,
   createFaculty,
   updateFaculty,
   deleteFaculty,
+  getFacultyWorkload,
+  updateFacultyWorkload,
+  FACULTY_FORM_STRUCTURE,
+  FACULTY_VALIDATION,
 };
+
+export default facultyService;

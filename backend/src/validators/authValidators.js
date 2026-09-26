@@ -4,7 +4,7 @@
 
 function validateLogin(req) {
   const errors = [];
-  const { email, password } = req.body || {};
+  const { email, password } = (req.body && typeof req.body === 'object') ? req.body : {};
 
   if (!email || typeof email !== 'string' || !email.trim()) {
     errors.push('Email is required');
@@ -12,7 +12,7 @@ function validateLogin(req) {
     errors.push('Please enter a valid email address');
   }
 
-  if (!password || typeof password !== 'string') {
+  if (!password || typeof password !== 'string' || !password.trim()) {
     errors.push('Password is required');
   }
 
@@ -21,7 +21,7 @@ function validateLogin(req) {
 
 function validateRegister(req) {
   const errors = [];
-  const { name, email, password, role } = req.body || {};
+  const { name, email, password, role } = (req.body && typeof req.body === 'object') ? req.body : {};
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     errors.push('Name is required');

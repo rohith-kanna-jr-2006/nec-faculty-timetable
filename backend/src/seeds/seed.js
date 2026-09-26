@@ -6,6 +6,7 @@ const { seedCourses } = require('./seedCourses');
 const { seedAcademicContext } = require('./seedAcademicContext');
 const { seedUsers } = require('./seedUsers');
 const { seedHandlers } = require('./seedHandlers');
+const { seedTimetable } = require('./seedTimetable');
 
 async function runMasterSeed() {
   console.log('============================================================');
@@ -33,6 +34,9 @@ async function runMasterSeed() {
 
     // 6. Seed initial course faculty handlers
     await seedHandlers();
+
+    // 7. Seed published timetable version and session schedule
+    await seedTimetable();
 
     console.log('\n============================================================');
     console.log('MASTER DATABASE SEEDING COMPLETED SUCCESSFULLY');

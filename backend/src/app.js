@@ -11,11 +11,45 @@ const app = express();
 app.use(helmet());
 
 // CORS Configuration
-const allowedOrigin = process.env.CLIENT_ORIGIN || '*';
+const allowedOriginEnv = process.env.CLIENT_ORIGIN;
+const defaultDevOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+];
+
+const corsOriginHandler = (origin, callback) => {
+  // Allow requests with no origin (e.g. mobile app, curl, server-to-server)
+  if (!origin) return callback(null, true);
+
+  if (allowedOriginEnv === '*') {
+    return callback(null, true);
+  }
+
+  if (allowedOriginEnv) {
+    const configuredOrigins = allowedOriginEnv.split(',').map((o) => o.trim());
+    if (configuredOrigins.includes(origin) || configuredOrigins.includes('*')) {
+      return callback(null, true);
+    }
+  }
+
+  // In non-production, permit standard localhost development origins
+  if (process.env.NODE_ENV !== 'production') {
+    if (defaultDevOrigins.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+  }
+
+  return callback(null, false);
+};
+
 app.use(
   cors({
-    origin: allowedOrigin === '*' ? true : allowedOrigin,
+    origin: corsOriginHandler,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   })
 );
 
@@ -27,6 +61,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // 50 requests per window
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',

@@ -1,0 +1,13 @@
+node_modules
+web/node_modules
+backend/node_modules
+.git
+.expo
+dist
+web-build
+.agents
+.playwright
+.playwright-mcp
+playwright-report
+test-results
+screenshots

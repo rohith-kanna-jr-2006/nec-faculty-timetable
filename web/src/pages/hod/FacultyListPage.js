@@ -108,7 +108,7 @@ export default function FacultyListPage() {
 
       {/* Filter and Search Bar */}
       <Card style={{ marginBottom: '20px', padding: '16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '14px' }}>
           <Input
             placeholder="Search by faculty name or ID..."
             value={search}
@@ -128,7 +128,7 @@ export default function FacultyListPage() {
       </Card>
 
       {/* Faculty Table Card */}
-      <Card>
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <Spinner size="lg" />
@@ -137,18 +137,25 @@ export default function FacultyListPage() {
             </div>
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState
-            title="No faculty members found"
-            description={search || designationFilter ? 'No faculty members match your filter criteria.' : 'No faculty records currently registered.'}
-            action={
-              <Button variant="primary" size="sm" onClick={() => navigate('/hod/faculty/add')} icon="➕">
-                Add First Faculty
-              </Button>
-            }
-          />
+          <div style={{ padding: '24px' }}>
+            <EmptyState
+              title="No faculty members found"
+              description={search || designationFilter ? 'No faculty members match your filter criteria.' : 'No faculty records currently registered.'}
+              action={
+                <Button variant="primary" size="sm" onClick={() => navigate('/hod/faculty/add')} icon="➕">
+                  Add First Faculty
+                </Button>
+              }
+            />
+          </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <div>
+            <div style={{ padding: '8px 14px', fontSize: '0.75rem', color: 'var(--color-on-surface-variant)', background: 'var(--color-surface-container-low)', borderBottom: '1px solid var(--color-surface-container)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>↔️</span>
+              <span>Scroll horizontally to view all faculty records</span>
+            </div>
+            <div className="ui-table-scroll-container">
+              <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: 'var(--color-surface-container-low)', textAlign: 'left', borderBottom: '1px solid var(--color-surface-container)' }}>
                   <th style={{ padding: '12px 16px', fontWeight: 600 }}>Faculty ID</th>
@@ -190,6 +197,7 @@ export default function FacultyListPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </Card>

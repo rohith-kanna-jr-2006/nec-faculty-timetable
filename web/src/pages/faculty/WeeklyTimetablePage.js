@@ -160,12 +160,12 @@ export default function WeeklyTimetablePage() {
       />
 
       {/* Control Strip & Filter Bar */}
-      <Card style={{ marginBottom: '20px', padding: '14px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <Card style={{ marginBottom: '20px', padding: '14px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
           {/* View Mode Toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-on-surface-variant)' }}>
-              Schedule View:
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
+              View:
             </span>
             <div style={{ display: 'inline-flex', padding: '2px', background: 'var(--color-surface-container-high)', borderRadius: 'var(--radius-md)' }}>
               <button
@@ -183,7 +183,7 @@ export default function WeeklyTimetablePage() {
                   boxShadow: viewMode === 'FACULTY' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                👤 Teaching Schedule ({activeFacultyName})
+                👤 Faculty View
               </button>
               <button
                 type="button"
@@ -200,14 +200,14 @@ export default function WeeklyTimetablePage() {
                   boxShadow: viewMode === 'CLASS' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                🏫 Class Master (III CSE &apos;A&apos;)
+                🏫 Class Master
               </button>
             </div>
           </div>
 
           {/* Day Filter Chips */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-on-surface-variant)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
               Filter:
             </span>
             <button
@@ -249,7 +249,11 @@ export default function WeeklyTimetablePage() {
         />
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ padding: '8px 14px', fontSize: '0.75rem', color: 'var(--color-on-surface-variant)', background: 'var(--color-surface-container-low)', borderBottom: '1px solid var(--color-surface-container)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>↔️</span>
+            <span>Scroll horizontally to view complete periods matrix (P1–P7)</span>
+          </div>
+          <div className="ui-timetable-scroll-container">
             <table
               style={{
                 width: '100%',

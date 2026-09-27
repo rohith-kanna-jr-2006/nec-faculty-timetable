@@ -52,7 +52,7 @@ export default function WorkloadSummary({
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '20px' }}>
         {/* UG Theory Box */}
         <div
           style={{
@@ -147,6 +147,9 @@ export default function WorkloadSummary({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
             padding: '10px 16px',
             borderBottom: '1px solid var(--color-surface-container)',
             fontSize: '0.875rem',
@@ -160,6 +163,9 @@ export default function WorkloadSummary({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
             padding: '10px 16px',
             borderBottom: '1px solid var(--color-surface-container)',
             fontSize: '0.875rem',
@@ -175,6 +181,9 @@ export default function WorkloadSummary({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
             padding: '12px 16px',
             backgroundColor: 'var(--color-surface-container-high)',
             fontSize: '1rem',

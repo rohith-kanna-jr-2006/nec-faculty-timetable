@@ -7,6 +7,10 @@ export default function AuthLayout() {
     <div
       style={{
         minHeight: '100vh',
+        width: '100%',
+        maxWidth: '100vw',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

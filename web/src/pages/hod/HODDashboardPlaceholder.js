@@ -24,7 +24,7 @@ export default function HODDashboardPlaceholder() {
         }
         badge={<Badge variant="warning">LEVEL 01 • STATUTORY EXECUTIVE</Badge>}
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Button variant="outline" size="sm" icon="👥" onClick={() => navigate('/hod/faculty')}>
               Faculty Directory
             </Button>
@@ -35,7 +35,7 @@ export default function HODDashboardPlaceholder() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px', marginBottom: '24px' }}>
         <Card
           title="Department Faculty Roster"
           hoverable
@@ -46,7 +46,7 @@ export default function HODDashboardPlaceholder() {
             <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>28</span>
             <span className="text-muted text-sm">CSE Faculty Members</span>
           </div>
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
             <Badge variant="success">All Workloads Verified</Badge>
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-secondary)' }}>View Roster →</span>
           </div>
@@ -58,7 +58,7 @@ export default function HODDashboardPlaceholder() {
               PENDING APPROVAL
             </span>
           </div>
-          <p className="text-muted text-sm" style={{ marginTop: 6 }}>
+          <p className="text-muted text-sm" style={{ marginTop: 6, wordBreak: 'break-word' }}>
             v1.0 Candidate submitted by AC Manikandan
           </p>
           <div style={{ marginTop: 8 }}>
@@ -78,10 +78,10 @@ export default function HODDashboardPlaceholder() {
       </div>
 
       <Card title="Statutory Executive Authority">
-        <p className="text-muted" style={{ marginBottom: 16 }}>
+        <p className="text-muted" style={{ marginBottom: 16, wordBreak: 'break-word' }}>
           Under Autonomous Regulations R2022, only the Head of Department holds binding authority to designate Class Advisors, approve candidate allocations, and ratify timetable versions from <code>PENDING_HOD_APPROVAL</code> to <code>APPROVED</code> or <code>PUBLISHED</code>.
         </p>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Badge variant="warning" dot>HOD Authority Model Active</Badge>
           <Badge variant="neutral">State Machine Backend Enforced</Badge>
         </div>

@@ -7,6 +7,8 @@ export default function Sidebar({
   role = 'FACULTY', // 'FACULTY' | 'AC' | 'HOD'
   isCollapsed = false,
   onToggleCollapse,
+  isMobileOpen = false,
+  onCloseMobile = () => {},
 }) {
   const location = useLocation();
 
@@ -109,10 +111,14 @@ export default function Sidebar({
   const groups = getNavigationGroups();
 
   return (
-    <aside className={`ui-sidebar ${isCollapsed ? 'ui-sidebar-collapsed' : ''}`}>
+    <aside className={`ui-sidebar ${isCollapsed ? 'ui-sidebar-collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
       {/* Brand Header */}
       <div className="ui-sidebar-header">
-        <NavLink to={`/${role === 'HOD' ? 'hod' : role === 'AC' ? 'coordinator' : 'faculty'}/dashboard`} className="ui-sidebar-brand">
+        <NavLink
+          to={`/${role === 'HOD' ? 'hod' : role === 'AC' ? 'coordinator' : 'faculty'}/dashboard`}
+          className="ui-sidebar-brand"
+          onClick={onCloseMobile}
+        >
           <StitchLogo size={36} />
           {!isCollapsed && (
             <div>
@@ -121,6 +127,7 @@ export default function Sidebar({
             </div>
           )}
         </NavLink>
+        {/* Desktop Collapse Button */}
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -129,6 +136,16 @@ export default function Sidebar({
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? '»' : '«'}
+        </button>
+        {/* Mobile Close Button */}
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          className="ui-sidebar-close-btn"
+          aria-label="Close navigation menu"
+          title="Close navigation menu"
+        >
+          ✕
         </button>
       </div>
 
@@ -154,6 +171,7 @@ export default function Sidebar({
                   to={item.path}
                   className={`ui-sidebar-link ${isActive ? 'active' : ''}`}
                   title={isCollapsed ? item.label : undefined}
+                  onClick={onCloseMobile}
                 >
                   <span className="ui-sidebar-link-icon">{item.icon}</span>
                   {!isCollapsed && (

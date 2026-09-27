@@ -124,25 +124,13 @@ export default function MyTimetablePage() {
     return (
       <div
         key={`${session.day}-${session.period}-${session._id || session.courseCode}`}
-        style={{
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'stretch',
-          marginBottom: '16px',
-        }}
+        className="ui-daily-session-item"
       >
         {/* Time Sidebar Column */}
         <div
+          className="ui-daily-time-badge"
           style={{
-            width: '120px',
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            padding: '12px',
             background: isNow ? 'var(--color-primary-fixed)' : 'var(--color-surface-container-low)',
-            borderRadius: 'var(--radius-md)',
             borderLeft: isNow ? '4px solid var(--color-secondary)' : '4px solid transparent',
           }}
         >
@@ -162,7 +150,7 @@ export default function MyTimetablePage() {
         </div>
 
         {/* Course Card Details */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <Card
             hoverable
             style={{
@@ -172,16 +160,16 @@ export default function MyTimetablePage() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-primary)' }}>
                     {session.courseCode}
                   </span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-on-surface)' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-on-surface)', wordBreak: 'break-word' }}>
                     {session.courseName}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }} className="text-sm text-muted">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', flexWrap: 'wrap' }} className="text-sm text-muted">
                   <span>🏫 {session.allocation || (session.academicContextId?.year ? `${session.academicContextId.year} CSE '${session.academicContextId.section}'` : "UG III Year A")}</span>
                   <span>📍 {session.room || 'LH-101'}</span>
                   {session.duration > 1 && <span>⏱️ Span: {session.duration} Periods</span>}
@@ -203,21 +191,12 @@ export default function MyTimetablePage() {
   const renderBreakCard = (breakItem) => (
     <div
       key={breakItem.name}
-      style={{
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'center',
-        padding: '10px 16px',
-        marginBottom: '16px',
-        background: 'var(--color-surface-container-lowest)',
-        border: '1px dashed var(--color-outline-variant)',
-        borderRadius: 'var(--radius-md)',
-      }}
+      className="ui-daily-break-item"
     >
       <div style={{ width: '120px', flexShrink: 0, fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-outline)' }}>
         {breakItem.startTime} – {breakItem.endTime}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '1.1rem' }}>{breakItem.icon || '☕'}</span>
         <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-on-surface-variant)' }}>
           {breakItem.name}
@@ -230,24 +209,12 @@ export default function MyTimetablePage() {
   const renderFreePeriodCard = (periodItem) => (
     <div
       key={`free-${periodItem.period}`}
-      style={{
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'stretch',
-        marginBottom: '16px',
-      }}
+      className="ui-daily-session-item"
     >
       <div
+        className="ui-daily-time-badge"
         style={{
-          width: '120px',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          padding: '12px',
           background: 'var(--color-surface-container-low)',
-          borderRadius: 'var(--radius-md)',
         }}
       >
         <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-outline)' }}>
@@ -260,6 +227,7 @@ export default function MyTimetablePage() {
       <div
         style={{
           flex: 1,
+          minWidth: 0,
           padding: '14px 18px',
           border: '1px dashed var(--color-outline-variant)',
           borderRadius: 'var(--radius-md)',
@@ -267,6 +235,8 @@ export default function MyTimetablePage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
         }}
       >
         <div>
@@ -377,7 +347,7 @@ export default function MyTimetablePage() {
       />
 
       {/* Top Academic Status KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px', marginBottom: '24px' }}>
         <Card title="Today's Classes" hoverable>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
             <span style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>
@@ -430,9 +400,11 @@ export default function MyTimetablePage() {
           display: 'flex',
           gap: '8px',
           overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
           paddingBottom: '12px',
           marginBottom: '20px',
           borderBottom: '1px solid var(--color-surface-container-high)',
+          maxWidth: '100%',
         }}
       >
         {dayTabs.map((tab) => {
@@ -496,7 +468,7 @@ export default function MyTimetablePage() {
           <EmptyState
             icon="🗓️"
             title="No Timetable Sessions Scheduled"
-            description={`No teaching periods are assigned to faculty profile ${facultyId} in the current published timetable version.`}
+            description={`No teaching periods are assigned to faculty profile ${activeFacultyId} in the current published timetable version.`}
             action={
               <Button variant="primary" size="sm" onClick={handleRefresh}>
                 Check Again

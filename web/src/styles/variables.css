@@ -167,4 +167,18 @@
   --max-content-width: 1440px;
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ======================================================== */
+  /* 13. RESPONSIVE BREAKPOINTS & TOUCH TARGETS               */
+  /* ======================================================== */
+  --touch-target-min: 44px;
+  --breakpoint-mobile-sm: 360px;
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-laptop: 1024px;
+  --breakpoint-desktop: 1280px;
+
+  --container-padding-mobile: 12px;
+  --container-padding-tablet: 20px;
+  --container-padding-desktop: 32px;
 }

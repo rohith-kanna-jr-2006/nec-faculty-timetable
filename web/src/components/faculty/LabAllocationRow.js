@@ -18,84 +18,71 @@ export default function LabAllocationRow({
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '130px 1.5fr 150px 110px 42px',
-        gap: '12px',
-        alignItems: 'start',
-        padding: '12px 14px',
-        backgroundColor: 'var(--color-surface-container-lowest)',
-        border: '1px solid var(--color-border-subtle)',
-        borderRadius: 'var(--radius-md)',
-        marginBottom: '10px',
-      }}
-    >
-      <Input
-        label={index === 0 ? 'Lab Code' : undefined}
-        placeholder="e.g. 22CSP07"
-        value={item.courseCode || ''}
-        onChange={(e) => handleFieldChange('courseCode', e.target.value)}
-        error={error.courseCode}
-      />
-
-      <Input
-        label={index === 0 ? 'Lab Title *' : undefined}
-        placeholder="e.g. Compiler Design Laboratory"
-        value={item.courseName || ''}
-        onChange={(e) => handleFieldChange('courseName', e.target.value)}
-        error={error.courseName}
-        required
-      />
-
-      <div className="ui-form-group">
-        {index === 0 && <label className="ui-label">Allocation</label>}
-        <input
-          list="lab-allocation-datalist"
-          className="ui-input"
-          placeholder="e.g. UG III Year A"
-          value={item.allocation || ''}
-          onChange={(e) => handleFieldChange('allocation', e.target.value)}
+    <div className="ui-allocation-row ui-allocation-row-5col">
+      <div className="ui-allocation-col">
+        <Input
+          label="Lab Code"
+          placeholder="e.g. 22CSP07"
+          value={item.courseCode || ''}
+          onChange={(e) => handleFieldChange('courseCode', e.target.value)}
+          error={error.courseCode}
         />
-        <datalist id="lab-allocation-datalist">
-          {STANDARD_ALLOCATIONS.map((alloc) => (
-            <option key={alloc} value={alloc} />
-          ))}
-        </datalist>
       </div>
 
-      <Input
-        label={index === 0 ? 'Hrs/Week' : undefined}
-        type="number"
-        min="0"
-        max="12"
-        step="1"
-        placeholder="4"
-        value={item.hours !== undefined && item.hours !== null ? item.hours : 4}
-        onChange={(e) => handleFieldChange('hours', e.target.value)}
-        error={error.hours}
-      />
+      <div className="ui-allocation-col ui-allocation-col-full">
+        <Input
+          label="Lab Title *"
+          placeholder="e.g. Compiler Design Laboratory"
+          value={item.courseName || ''}
+          onChange={(e) => handleFieldChange('courseName', e.target.value)}
+          error={error.courseName}
+          required
+        />
+      </div>
 
-      <div style={{ paddingTop: index === 0 ? '24px' : '2px', display: 'flex', justifyContent: 'center' }}>
+      <div className="ui-allocation-col">
+        <div className="ui-form-group">
+          <label className="ui-label">Allocation</label>
+          <input
+            list={`lab-allocation-datalist-${index}`}
+            className="ui-input"
+            placeholder="e.g. UG III Year A"
+            value={item.allocation || ''}
+            onChange={(e) => handleFieldChange('allocation', e.target.value)}
+          />
+          <datalist id={`lab-allocation-datalist-${index}`}>
+            {STANDARD_ALLOCATIONS.map((alloc) => (
+              <option key={alloc} value={alloc} />
+            ))}
+          </datalist>
+        </div>
+      </div>
+
+      <div className="ui-allocation-col">
+        <Input
+          label="Hrs/Week"
+          type="number"
+          min="0"
+          max="12"
+          step="1"
+          placeholder="4"
+          value={item.hours !== undefined && item.hours !== null ? item.hours : 4}
+          onChange={(e) => handleFieldChange('hours', e.target.value)}
+          error={error.hours}
+        />
+      </div>
+
+      <div className="ui-allocation-col-action">
         <button
           type="button"
           onClick={() => onRemove(index)}
           disabled={!isRemovable}
-          title="Remove laboratory allocation"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: isRemovable ? 'var(--color-error)' : 'var(--color-outline-variant)',
-            cursor: isRemovable ? 'pointer' : 'not-allowed',
-            fontSize: '18px',
-            padding: '6px',
-            borderRadius: 'var(--radius-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          title={isRemovable ? 'Remove laboratory allocation' : 'At least one row required'}
+          className="ui-allocation-delete-btn"
+          aria-label={`Remove lab ${item.courseCode || index + 1}`}
         >
-          ✕
+          <span>✕</span>
+          <span className="ui-allocation-delete-label">Remove Lab</span>
         </button>
       </div>
     </div>

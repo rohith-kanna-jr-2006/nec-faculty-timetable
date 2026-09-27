@@ -27,13 +27,13 @@ export default function CoordinatorDashboardPlaceholder() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px', marginBottom: '24px' }}>
         <Card title="Curriculum Courses (R2022)" hoverable>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
             <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>12</span>
             <span className="text-muted text-sm">Courses Active (Sem V)</span>
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <Badge variant="theory">3 Theory</Badge>{' '}
             <Badge variant="lab">2 Lab</Badge>{' '}
             <Badge variant="elective">3 Electives</Badge>
@@ -62,12 +62,12 @@ export default function CoordinatorDashboardPlaceholder() {
       </div>
 
       <Card title="Operational Pipeline Status">
-        <p className="text-muted" style={{ marginBottom: 16 }}>
-          Academic Coordinator operational workflows are structured for desktop management: Course Selection $\rightarrow$ Faculty Assignment $\rightarrow$ Conflict Detection $\rightarrow$ Validation $\rightarrow$ Optimization Solver $\rightarrow$ Submit to HOD.
+        <p className="text-muted" style={{ marginBottom: 16, wordBreak: 'break-word' }}>
+          Academic Coordinator operational workflows are structured for multi-device management: Course Selection → Faculty Assignment → Conflict Detection → Validation → Optimization Solver → Submit to HOD.
         </p>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Badge variant="secondary" dot>AC Layout Verified</Badge>
-          <Badge variant="neutral">Desktop Table Primitives Ready</Badge>
+          <Badge variant="neutral">Multi-Device Primitives Ready</Badge>
         </div>
       </Card>
     </div>

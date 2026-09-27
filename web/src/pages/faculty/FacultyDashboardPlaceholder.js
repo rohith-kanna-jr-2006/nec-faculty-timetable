@@ -27,13 +27,13 @@ export default function FacultyDashboardPlaceholder() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px', marginBottom: '24px' }}>
         <Card title="Today's Academic Status" hoverable>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
             <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>3</span>
             <span className="text-muted text-sm">Classes Scheduled</span>
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <Badge variant="theory">Theory: 2</Badge>{' '}
             <Badge variant="lab">Lab: 1 Span</Badge>
           </div>
@@ -53,7 +53,7 @@ export default function FacultyDashboardPlaceholder() {
           <div style={{ fontWeight: 600, color: 'var(--color-primary)', marginTop: 4 }}>
             Odd Semester 2024-25
           </div>
-          <p className="text-muted text-sm" style={{ marginTop: 4 }}>
+          <p className="text-muted text-sm" style={{ marginTop: 4, wordBreak: 'break-word' }}>
             Autonomous Regulations R2022 • Dept of CSE
           </p>
           <div style={{ marginTop: 8 }}>
@@ -62,13 +62,13 @@ export default function FacultyDashboardPlaceholder() {
         </Card>
       </div>
 
-      <Card title="Phase 1 Foundation Verification">
-        <p className="text-muted" style={{ marginBottom: 16 }}>
-          This desktop layout confirms that the Webpack 5 build, React Router v6, layout components (Sidebar, Topbar, PageHeader), and Stitch design tokens are functioning correctly.
+      <Card title="Institutional Operational Verification">
+        <p className="text-muted" style={{ marginBottom: 16, wordBreak: 'break-word' }}>
+          This responsive layout adapts across mobile, tablet, laptop, and desktop viewports, with Stitch design tokens and unified AppShell navigation.
         </p>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Badge variant="success" dot>Desktop Layout Active</Badge>
-          <Badge variant="secondary">Sidebar Navigation Ready</Badge>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Badge variant="success" dot>Responsive AppShell Active</Badge>
+          <Badge variant="secondary">Mobile Drawer Ready</Badge>
           <Badge variant="neutral">Tokens Ported</Badge>
         </div>
       </Card>

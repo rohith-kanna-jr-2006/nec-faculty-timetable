@@ -751,7 +751,7 @@ export default function AddFacultyPage() {
         {/* Section 8: Review & Save */}
         <Card title="8. Review & Save Workload Allocation" style={{ marginBottom: '36px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
+            <div style={{ flex: '1 1 280px', minWidth: 0 }}>
               <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--color-on-surface)' }}>
                 Commit Faculty Profile & Allocation
               </h4>
@@ -760,7 +760,7 @@ export default function AddFacultyPage() {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="ui-add-faculty-action-group">
               <Button
                 variant="outline"
                 size="md"

@@ -259,8 +259,281 @@
 .ui-form-error {
   font-size: 0.75rem;
   color: var(--color-error);
-  margin-top: 2px;
+  margin-top: 4px;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.35;
+  display: block;
 }
+
+/* ======================================================== */
+/* 9. PAGE HEADER STYLES                                    */
+/* ======================================================== */
+.ui-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-surface-container);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ui-page-header-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.ui-page-header-title {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.ui-page-header-desc {
+  font-size: 0.875rem;
+  color: var(--color-on-surface-variant);
+  word-break: break-word;
+}
+
+.ui-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .ui-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .ui-page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .ui-card {
+    padding: 14px 12px;
+  }
+
+  .ui-page-header-title {
+    font-size: 1.25rem;
+  }
+}
+
+/* ======================================================== */
+/* 10. RESPONSIVE ALLOCATION ROW COMPONENT STYLES          */
+/* ======================================================== */
+.ui-allocation-row {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: border-color var(--transition-normal);
+}
+
+.ui-allocation-row:focus-within {
+  border-color: var(--color-secondary);
+}
+
+/* Desktop 5-field row */
+.ui-allocation-row-5col {
+  grid-template-columns: 130px minmax(180px, 1.5fr) minmax(140px, 1fr) 110px 44px;
+}
+
+/* Desktop 4-field row (PG, Other) */
+.ui-allocation-row-4col {
+  grid-template-columns: minmax(180px, 1.6fr) minmax(140px, 1fr) 130px 44px;
+}
+
+/* Desktop Responsibility row */
+.ui-allocation-row-resp {
+  grid-template-columns: minmax(200px, 1.8fr) 130px minmax(140px, 1fr) 44px;
+}
+
+.ui-allocation-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-error);
+  cursor: pointer;
+  font-size: 1.125rem;
+  transition: all var(--transition-normal);
+}
+
+.ui-allocation-delete-btn:hover:not(:disabled) {
+  background-color: var(--color-error-container);
+  border-color: var(--color-error);
+  color: var(--color-on-error-container);
+}
+
+.ui-allocation-delete-btn:disabled {
+  color: var(--color-outline-variant);
+  border-color: transparent;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.ui-allocation-delete-label {
+  display: none;
+}
+
+/* Tablet adaptive 2-column stacking */
+@media (max-width: 900px) {
+  .ui-allocation-row-5col,
+  .ui-allocation-row-4col,
+  .ui-allocation-row-resp {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .ui-allocation-col-full {
+    grid-column: 1 / -1;
+  }
+
+  .ui-allocation-col-action {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px dashed var(--color-surface-container);
+  }
+}
+
+/* Mobile full-width stacking */
+@media (max-width: 540px) {
+  .ui-allocation-row-5col,
+  .ui-allocation-row-4col,
+  .ui-allocation-row-resp {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .ui-allocation-col-action {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: stretch;
+    padding-top: 8px;
+    border-top: 1px dashed var(--color-surface-container);
+  }
+
+  .ui-allocation-delete-btn {
+    width: 100%;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 6px;
+    border-color: rgba(186, 26, 26, 0.3);
+  }
+
+  .ui-allocation-delete-label {
+    display: inline;
+  }
+}
+
+/* Add Faculty Action Button Group */
+.ui-add-faculty-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .ui-add-faculty-action-group {
+    width: 100%;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ui-add-faculty-action-group > * {
+    width: 100%;
+  }
+}
+
+/* ======================================================== */
+/* 11. DAILY TIMETABLE RESPONSIVE SESSION STYLES            */
+/* ======================================================== */
+.ui-daily-session-item {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.ui-daily-time-badge {
+  width: 120px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+.ui-daily-break-item {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--color-surface-container-lowest);
+  border: 1px dashed var(--color-outline-variant);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 600px) {
+  .ui-daily-session-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ui-daily-time-badge {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+  }
+
+  .ui-daily-break-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 12px;
+  }
+}
+
+
+
 
 .ui-select {
   width: 100%;
@@ -465,34 +738,5 @@
   margin-bottom: var(--spacing-lg);
 }
 
-/* ======================================================== */
-/* 9. PAGE HEADER STYLES                                    */
-/* ======================================================== */
-.ui-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-surface-container);
-}
 
-.ui-page-header-title {
-  font-size: 1.625rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 4px;
-}
 
-.ui-page-header-desc {
-  font-size: 0.875rem;
-  color: var(--color-on-surface-variant);
-}
-
-.ui-page-header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-}

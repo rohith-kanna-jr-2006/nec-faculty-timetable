@@ -16,3 +16,23 @@ ios/
 Thumbs.db
 backend/node_modules/
 
+# Playwright & test artifacts
+.agents/
+.playwright/
+.playwright-mcp/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Screenshots & test media captures
+screenshots/
+**/screenshots/
+screenshot*.png
+screenshot*.jpg
+screenshot*.jpeg
+*screenshot*.png
+*screenshot*.jpg
+*screenshot*.jpeg
+*.webm
+*.mp4

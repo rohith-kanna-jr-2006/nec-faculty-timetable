@@ -1,9 +1,9 @@
 /**
  * Helper to parse pagination parameters from query
  */
-function getPaginationParams(query = {}) {
+function getPaginationParams(query = {}, defaultLimit = 20) {
   const page = Math.max(1, parseInt(query.page, 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20));
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || defaultLimit));
   const skip = (page - 1) * limit;
 
   return {

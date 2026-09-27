@@ -19,7 +19,7 @@ const { getPaginationParams, formatPaginatedResult } = require('../utils/paginat
 async function getFacultyList(req, res, next) {
   try {
     const { search, department, role, isActive } = req.query;
-    const { page, limit, skip } = getPaginationParams(req.query);
+    const { page, limit, skip } = getPaginationParams(req.query, 50);
 
     const query = {};
 
@@ -44,12 +44,39 @@ async function getFacultyList(req, res, next) {
       query.isActive = isActive === 'true';
     }
 
-    const [items, total] = await Promise.all([
+    const [facultyDocs, total] = await Promise.all([
       Faculty.find(query).sort({ facultyId: 1 }).skip(skip).limit(limit),
       Faculty.countDocuments(query),
     ]);
 
-    return successResponse(res, formatPaginatedResult(items, total, page, limit));
+    const facultyIds = facultyDocs.map((f) => f.facultyId);
+    const workloadDocs = await FacultyWorkload.find(
+      { facultyId: { $in: facultyIds } },
+      { facultyId: 1, calculatedTotalHours: 1, calculatedTeachingHours: 1, calculatedResponsibilityHours: 1, status: 1, isIncomplete: 1 }
+    );
+
+    const workloadMap = new Map();
+    workloadDocs.forEach((w) => workloadMap.set(w.facultyId, w));
+
+    const items = facultyDocs.map((f) => {
+      const obj = f.toObject ? f.toObject() : { ...f._doc };
+      const w = workloadMap.get(f.facultyId);
+      return {
+        ...obj,
+        calculatedTotalHours: w ? w.calculatedTotalHours : null,
+        calculatedTeachingHours: w ? w.calculatedTeachingHours : null,
+        calculatedResponsibilityHours: w ? w.calculatedResponsibilityHours : null,
+        status: w ? w.status : (f.isActive ? 'ACTIVE' : 'INACTIVE'),
+        workload: w || null,
+      };
+    });
+
+    const paginated = formatPaginatedResult(items, total, page, limit);
+
+    return successResponse(res, {
+      ...paginated,
+      faculty: items,
+    });
   } catch (error) {
     next(error);
   }

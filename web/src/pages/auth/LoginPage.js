@@ -76,7 +76,7 @@ export default function LoginPage() {
           </label>
           <span className="text-xs text-muted">Click to autofill</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           <button
             type="button"
             className={`btn ${email === 'faculty@nec.edu.in' ? 'btn-primary' : 'btn-outline'} btn-sm`}
@@ -105,14 +105,6 @@ export default function LoginPage() {
             onClick={() => handleRolePreset('hod@nec.edu.in')}
           >
             HOD
-          </button>
-          <button
-            type="button"
-            className={`btn ${email === 'admin@nec.edu.in' ? 'btn-subtle' : 'btn-outline'} btn-sm`}
-            style={{ fontSize: '0.75rem', padding: '6px 4px' }}
-            onClick={() => handleRolePreset('admin@nec.edu.in')}
-          >
-            Admin
           </button>
         </div>
       </div>

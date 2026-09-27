@@ -7,6 +7,7 @@ import {
   groupSessionsByDay,
   calculateTimetableMetrics,
 } from '../../services/timetableService';
+import { getFacultyList } from '../../services/facultyService';
 import { WEEK_DAYS, PERIOD_TIMINGS } from '../../constants/schedule';
 
 import PageHeader from '../../components/common/PageHeader';
@@ -27,19 +28,37 @@ export default function WeeklyTimetablePage() {
   const [sessions, setSessions] = useState([]);
   const [selectedDayFilter, setSelectedDayFilter] = useState('ALL');
 
-  const facultyId = user?.facultyId || 'FWL-03';
-  const facultyName = user?.name || 'Dr. S. Karpusamy';
+  const [activeFacultyId, setActiveFacultyId] = useState(user?.facultyId || 'FWL-03');
+  const [activeFacultyName, setActiveFacultyName] = useState(user?.name || 'Dr. S. Karpusamy');
+  const [allFaculty, setAllFaculty] = useState([]);
+
+  // Fetch faculty list for switcher
+  useEffect(() => {
+    async function loadFaculty() {
+      try {
+        const res = await getFacultyList({ limit: 100 });
+        const list = res.items || res.data || (Array.isArray(res) ? res : []);
+        setAllFaculty(list);
+        if (user?.facultyId) {
+          const match = list.find((f) => f.facultyId === user.facultyId);
+          if (match) setActiveFacultyName(match.facultyName);
+        }
+      } catch (err) {
+        console.warn('Could not load faculty list for dropdown:', err.message);
+      }
+    }
+    loadFaculty();
+  }, [user]);
 
   const fetchMatrix = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       if (viewMode === 'FACULTY') {
-        const data = await getFacultyTimetable(facultyId);
+        const data = await getFacultyTimetable(activeFacultyId);
         setSessions(data.sessions || []);
       } else {
         // Fetch class schedule for III Year CSE 'A'
-        // For demonstration and class viewing, query class schedule
         const data = await getFacultyTimetable('FWL-03');
         setSessions(data.sessions || []);
       }
@@ -49,11 +68,20 @@ export default function WeeklyTimetablePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [facultyId, viewMode]);
+  }, [activeFacultyId, viewMode]);
 
   useEffect(() => {
     fetchMatrix();
   }, [fetchMatrix]);
+
+  const handleFacultyChange = (e) => {
+    const selectedId = e.target.value;
+    setActiveFacultyId(selectedId);
+    const match = allFaculty.find((f) => f.facultyId === selectedId);
+    if (match) {
+      setActiveFacultyName(match.facultyName);
+    }
+  };
 
   const handleRefresh = async () => {
     await fetchMatrix();
@@ -90,7 +118,37 @@ export default function WeeklyTimetablePage() {
         }
         badge={<Badge variant="primary">DEPARTMENT OF CSE • III YEAR &apos;A&apos;</Badge>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label htmlFor="weekly-faculty-select" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-on-surface-variant)' }}>
+                Faculty:
+              </label>
+              <select
+                id="weekly-faculty-select"
+                className="form-select form-select-sm"
+                value={activeFacultyId}
+                onChange={handleFacultyChange}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-outline-variant)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--color-primary)',
+                  background: '#ffffff',
+                }}
+              >
+                {allFaculty.length > 0 ? (
+                  allFaculty.map((f) => (
+                    <option key={f.facultyId} value={f.facultyId}>
+                      {f.facultyId}: {f.facultyName}
+                    </option>
+                  ))
+                ) : (
+                  <option value={activeFacultyId}>{activeFacultyName} ({activeFacultyId})</option>
+                )}
+              </select>
+            </div>
             <Button variant="outline" size="sm" icon="🖨️" onClick={handlePrint}>
               Print / Export Grid
             </Button>
@@ -125,7 +183,7 @@ export default function WeeklyTimetablePage() {
                   boxShadow: viewMode === 'FACULTY' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                👤 My Teaching Schedule ({facultyName})
+                👤 Teaching Schedule ({activeFacultyName})
               </button>
               <button
                 type="button"

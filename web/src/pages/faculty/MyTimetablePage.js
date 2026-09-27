@@ -8,6 +8,7 @@ import {
   groupSessionsByDay,
   calculateTimetableMetrics,
 } from '../../services/timetableService';
+import { getFacultyList } from '../../services/facultyService';
 import { WEEK_DAYS, PERIOD_TIMINGS } from '../../constants/schedule';
 
 import PageHeader from '../../components/common/PageHeader';
@@ -29,8 +30,27 @@ export default function MyTimetablePage() {
   const [selectedDay, setSelectedDay] = useState(() => getCurrentDayId());
   const [currentPeriod, setCurrentPeriod] = useState(() => getCurrentPeriodStatus());
 
-  const facultyId = user?.facultyId || 'FWL-03';
-  const facultyName = user?.name || 'Dr. S. Karpusamy';
+  const [activeFacultyId, setActiveFacultyId] = useState(user?.facultyId || 'FWL-03');
+  const [activeFacultyName, setActiveFacultyName] = useState(user?.name || 'Dr. S. Karpusamy');
+  const [allFaculty, setAllFaculty] = useState([]);
+
+  // Fetch faculty list for switcher
+  useEffect(() => {
+    async function loadFaculty() {
+      try {
+        const res = await getFacultyList({ limit: 100 });
+        const list = res.items || res.data || (Array.isArray(res) ? res : []);
+        setAllFaculty(list);
+        if (user?.facultyId) {
+          const match = list.find((f) => f.facultyId === user.facultyId);
+          if (match) setActiveFacultyName(match.facultyName);
+        }
+      } catch (err) {
+        console.warn('Could not load faculty list for dropdown:', err.message);
+      }
+    }
+    loadFaculty();
+  }, [user]);
 
   // Live period clock ticker
   useEffect(() => {
@@ -44,7 +64,7 @@ export default function MyTimetablePage() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getFacultyTimetable(facultyId);
+      const data = await getFacultyTimetable(activeFacultyId);
       setSessions(data.sessions || []);
     } catch (err) {
       console.error('[MyTimetable] Failed to fetch schedule:', err);
@@ -52,11 +72,20 @@ export default function MyTimetablePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [facultyId]);
+  }, [activeFacultyId]);
 
   useEffect(() => {
     fetchSchedule();
   }, [fetchSchedule]);
+
+  const handleFacultyChange = (e) => {
+    const selectedId = e.target.value;
+    setActiveFacultyId(selectedId);
+    const match = allFaculty.find((f) => f.facultyId === selectedId);
+    if (match) {
+      setActiveFacultyName(match.facultyName);
+    }
+  };
 
   const handleRefresh = async () => {
     await fetchSchedule();
@@ -153,7 +182,7 @@ export default function MyTimetablePage() {
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }} className="text-sm text-muted">
-                  <span>🏫 III Year CSE &apos;A&apos;</span>
+                  <span>🏫 {session.allocation || (session.academicContextId?.year ? `${session.academicContextId.year} CSE '${session.academicContextId.section}'` : "UG III Year A")}</span>
                   <span>📍 {session.room || 'LH-101'}</span>
                   {session.duration > 1 && <span>⏱️ Span: {session.duration} Periods</span>}
                 </div>
@@ -295,7 +324,7 @@ export default function MyTimetablePage() {
     <div>
       <PageHeader
         title="My Timetable"
-        description={`Personal weekly teaching schedule and lecture timeline for ${facultyName} (${facultyId}).`}
+        description={`Personal weekly teaching schedule and lecture timeline for ${activeFacultyName} (${activeFacultyId}).`}
         breadcrumbs={
           <Breadcrumbs
             items={[
@@ -306,7 +335,37 @@ export default function MyTimetablePage() {
         }
         badge={<Badge variant="success">AY 2026-27 • ODD SEMESTER • VERIFIED</Badge>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label htmlFor="faculty-select" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-on-surface-variant)' }}>
+                Faculty:
+              </label>
+              <select
+                id="faculty-select"
+                className="form-select form-select-sm"
+                value={activeFacultyId}
+                onChange={handleFacultyChange}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-outline-variant)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--color-primary)',
+                  background: '#ffffff',
+                }}
+              >
+                {allFaculty.length > 0 ? (
+                  allFaculty.map((f) => (
+                    <option key={f.facultyId} value={f.facultyId}>
+                      {f.facultyId}: {f.facultyName}
+                    </option>
+                  ))
+                ) : (
+                  <option value={activeFacultyId}>{activeFacultyName} ({activeFacultyId})</option>
+                )}
+              </select>
+            </div>
             <Button variant="outline" size="sm" icon="🖨️" onClick={handlePrint}>
               Print / PDF
             </Button>

@@ -8,6 +8,11 @@ async function seedUsers() {
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(defaultPassword, salt);
 
+  // Authoritative master faculty list
+  const workloadModule = await import('../../../constants/workloadMasterData.js');
+  const masterData = workloadModule.FACULTY_WORKLOAD_MASTER;
+
+  // Base alias accounts for test suites
   const users = [
     {
       name: 'Dr. T. Rajasekaran',
@@ -42,6 +47,33 @@ async function seedUsers() {
       isActive: true,
     },
   ];
+
+  const existingEmails = new Set(users.map((u) => u.email.toLowerCase()));
+
+  // Add all 27 faculty members as individual logins
+  for (const f of masterData) {
+    const cleanName = f.facultyName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const email = `${cleanName}@nec.edu.in`;
+
+    if (!existingEmails.has(email)) {
+      const desigLower = (f.designation || '').toLowerCase();
+      let role = 'FACULTY';
+      if (desigLower.includes('hod')) role = 'HOD';
+      else if ((f.responsibilities || []).some((r) => (r.role || '').toLowerCase().includes('academic coordinator'))) {
+        role = 'AC';
+      }
+
+      users.push({
+        name: f.facultyName,
+        email,
+        passwordHash,
+        role,
+        facultyId: f.facultyId,
+        isActive: true,
+      });
+      existingEmails.add(email);
+    }
+  }
 
   await User.deleteMany({});
   const inserted = await User.insertMany(users);
